@@ -59,6 +59,7 @@ fn send_sourced_subscription_to_net_children(
     _sub_info: &SubscriberInfo,
     routing_context: NodeId,
 ) {
+    println!("send_sourced_subscription_to_net_children");
     for child in children {
         if net.graph.contains_node(*child) {
             match tables.get_face(&net.graph[*child].zid).cloned() {
@@ -103,6 +104,7 @@ fn propagate_simple_subscription_to(
     full_peer_net: bool,
     send_declare: &mut SendDeclare,
 ) {
+    println!("propagate_simple_subscription_to");
     if src_face.id != dst_face.id
         && !face_hat!(dst_face).local_subs.contains_key(res)
         && if full_peer_net {
@@ -160,6 +162,7 @@ fn propagate_simple_subscription(
     src_face: &mut Arc<FaceState>,
     send_declare: &mut SendDeclare,
 ) {
+    println!("propagate_simple_subscription");
     let full_peer_net = hat!(tables).full_net(WhatAmI::Peer);
     for mut dst_face in tables
         .faces
@@ -187,6 +190,7 @@ fn propagate_sourced_subscription(
     source: &ZenohIdProto,
     net_type: WhatAmI,
 ) {
+    println!("propagate_sourced_subscription");
     let net = hat!(tables).get_net(net_type).unwrap();
     match net.get_idx(source) {
         Some(tree_sid) => {
@@ -225,6 +229,7 @@ fn register_router_subscription(
     router: ZenohIdProto,
     send_declare: &mut SendDeclare,
 ) {
+    println!("register_router_subscription");
     if !res_hat!(res).router_subs.contains(&router) {
         // Register router subscription
         {
@@ -252,6 +257,7 @@ fn declare_router_subscription(
     router: ZenohIdProto,
     send_declare: &mut SendDeclare,
 ) {
+    println!("declare_router_subscription");
     register_router_subscription(tables, face, res, sub_info, router, send_declare);
 }
 
@@ -262,6 +268,7 @@ fn register_linkstatepeer_subscription(
     sub_info: &SubscriberInfo,
     peer: ZenohIdProto,
 ) {
+    println!("register_linkstatepeer_subscription");
     if !res_hat!(res).linkstatepeer_subs.contains(&peer) {
         // Register peer subscription
         {
@@ -282,6 +289,7 @@ fn declare_linkstatepeer_subscription(
     peer: ZenohIdProto,
     send_declare: &mut SendDeclare,
 ) {
+    println!("declare_linkstatepeer_subscription");
     register_linkstatepeer_subscription(tables, face, res, sub_info, peer);
     let propa_sub_info = *sub_info;
     let zid = tables.zid;
@@ -295,6 +303,7 @@ fn register_simple_subscription(
     res: &mut Arc<Resource>,
     sub_info: &SubscriberInfo,
 ) {
+    println!("register_simple_subscription");
     // Register subscription
     {
         let res = get_mut_unchecked(res);
@@ -324,6 +333,7 @@ fn declare_simple_subscription(
     sub_info: &SubscriberInfo,
     send_declare: &mut SendDeclare,
 ) {
+    println!("declare_simple_subscription");
     register_simple_subscription(tables, face, id, res, sub_info);
     let zid = tables.zid;
     register_router_subscription(tables, face, res, sub_info, zid, send_declare);
@@ -331,6 +341,7 @@ fn declare_simple_subscription(
 
 #[inline]
 fn remote_router_subs(tables: &Tables, res: &Arc<Resource>) -> bool {
+    println!("remote_router_subs");
     res.context.is_some()
         && res_hat!(res)
             .router_subs
@@ -340,6 +351,7 @@ fn remote_router_subs(tables: &Tables, res: &Arc<Resource>) -> bool {
 
 #[inline]
 fn remote_linkstatepeer_subs(tables: &Tables, res: &Arc<Resource>) -> bool {
+    println!("remote_linkstatepeer_subs");
     res.context.is_some()
         && res_hat!(res)
             .linkstatepeer_subs
@@ -349,6 +361,7 @@ fn remote_linkstatepeer_subs(tables: &Tables, res: &Arc<Resource>) -> bool {
 
 #[inline]
 fn simple_subs(res: &Arc<Resource>) -> Vec<Arc<FaceState>> {
+    println!("simple_subs");
     res.session_ctxs
         .values()
         .filter_map(|ctx| {
@@ -363,6 +376,7 @@ fn simple_subs(res: &Arc<Resource>) -> Vec<Arc<FaceState>> {
 
 #[inline]
 fn remote_simple_subs(res: &Arc<Resource>, face: &Arc<FaceState>) -> bool {
+    println!("remote_simple_subs");
     res.session_ctxs
         .values()
         .any(|ctx| ctx.face.id != face.id && ctx.subs.is_some())
@@ -377,6 +391,7 @@ fn send_forget_sourced_subscription_to_net_children(
     src_face: Option<&Arc<FaceState>>,
     routing_context: Option<NodeId>,
 ) {
+    println!("send_forget_sourced_subscription_to_net_children");
     for child in children {
         if net.graph.contains_node(*child) {
             match tables.get_face(&net.graph[*child].zid).cloned() {
@@ -416,6 +431,7 @@ fn propagate_forget_simple_subscription(
     res: &Arc<Resource>,
     send_declare: &mut SendDeclare,
 ) {
+    println!("propagate_forget_simple_subscription");
     for mut face in tables.faces.values().cloned() {
         if let Some(id) = face_hat_mut!(&mut face).local_subs.remove(res) {
             send_declare(
@@ -477,6 +493,7 @@ fn propagate_forget_simple_subscription_to_peers(
     res: &Arc<Resource>,
     send_declare: &mut SendDeclare,
 ) {
+    println!("propagate_forget_simple_subscription_to_peers");
     if !hat!(tables).full_net(WhatAmI::Peer)
         && res_hat!(res).router_subs.len() == 1
         && res_hat!(res).router_subs.contains(&tables.zid)
@@ -527,6 +544,7 @@ fn propagate_forget_sourced_subscription(
     source: &ZenohIdProto,
     net_type: WhatAmI,
 ) {
+    println!("propagate_forget_sourced_subscription");
     let net = hat!(tables).get_net(net_type).unwrap();
     match net.get_idx(source) {
         Some(tree_sid) => {
@@ -562,6 +580,7 @@ fn unregister_router_subscription(
     router: &ZenohIdProto,
     send_declare: &mut SendDeclare,
 ) {
+    println!("unregister_router_subscription");
     res_hat_mut!(res).router_subs.retain(|sub| sub != router);
 
     if res_hat!(res).router_subs.is_empty() {
@@ -585,6 +604,7 @@ fn undeclare_router_subscription(
     router: &ZenohIdProto,
     send_declare: &mut SendDeclare,
 ) {
+    println!("undeclare_router_subscription");
     if res_hat!(res).router_subs.contains(router) {
         unregister_router_subscription(tables, res, router, send_declare);
         propagate_forget_sourced_subscription(tables, res, face, router, WhatAmI::Router);
@@ -598,10 +618,12 @@ fn forget_router_subscription(
     router: &ZenohIdProto,
     send_declare: &mut SendDeclare,
 ) {
+    println!("forget_router_subscription");
     undeclare_router_subscription(tables, Some(face), res, router, send_declare);
 }
 
 fn unregister_peer_subscription(tables: &mut Tables, res: &mut Arc<Resource>, peer: &ZenohIdProto) {
+    println!("unregister_peer_subscription");
     res_hat_mut!(res)
         .linkstatepeer_subs
         .retain(|sub| sub != peer);
@@ -619,6 +641,7 @@ fn undeclare_linkstatepeer_subscription(
     res: &mut Arc<Resource>,
     peer: &ZenohIdProto,
 ) {
+    println!("undeclare_linkstatepeer_subscription");
     if res_hat!(res).linkstatepeer_subs.contains(peer) {
         unregister_peer_subscription(tables, res, peer);
         propagate_forget_sourced_subscription(tables, res, face, peer, WhatAmI::Peer);
@@ -632,6 +655,7 @@ fn forget_linkstatepeer_subscription(
     peer: &ZenohIdProto,
     send_declare: &mut SendDeclare,
 ) {
+    println!("forget_linkstatepeer_subscription");
     undeclare_linkstatepeer_subscription(tables, Some(face), res, peer);
     let simple_subs = res.session_ctxs.values().any(|ctx| ctx.subs.is_some());
     let linkstatepeer_subs = remote_linkstatepeer_subs(tables, res);
@@ -647,6 +671,7 @@ pub(super) fn undeclare_simple_subscription(
     res: &mut Arc<Resource>,
     send_declare: &mut SendDeclare,
 ) {
+    println!("undeclare_simple_subscription");
     if !face_hat_mut!(face).remote_subs.values().any(|s| *s == *res) {
         if let Some(ctx) = get_mut_unchecked(res).session_ctxs.get_mut(&face.id) {
             get_mut_unchecked(ctx).subs = None;
@@ -725,6 +750,7 @@ fn forget_simple_subscription(
     id: SubscriberId,
     send_declare: &mut SendDeclare,
 ) -> Option<Arc<Resource>> {
+    println!("forget_simple_subscription");
     if let Some(mut res) = face_hat_mut!(face).remote_subs.remove(&id) {
         undeclare_simple_subscription(tables, face, &mut res, send_declare);
         Some(res)
@@ -739,6 +765,7 @@ pub(super) fn pubsub_remove_node(
     net_type: WhatAmI,
     send_declare: &mut SendDeclare,
 ) {
+    println!("pubsub_remove_node");
     match net_type {
         WhatAmI::Router => {
             for mut res in hat!(tables)
@@ -788,6 +815,7 @@ pub(super) fn pubsub_tree_change(
     new_children: &[Vec<NodeIndex>],
     net_type: WhatAmI,
 ) {
+    println!("pubsub_tree_change");
     let net = match hat!(tables).get_net(net_type) {
         Some(net) => net,
         None => {
@@ -841,6 +869,7 @@ pub(super) fn pubsub_linkstate_change(
     links: &[ZenohIdProto],
     send_declare: &mut SendDeclare,
 ) {
+    println!("pubsub_linkstate_change");
     if let Some(mut src_face) = tables.get_face(zid).cloned() {
         if hat!(tables).router_peers_failover_brokering && src_face.whatami == WhatAmI::Peer {
             let to_forget = face_hat!(src_face)
@@ -921,6 +950,7 @@ pub(super) fn pubsub_linkstate_change(
 
 #[inline]
 fn make_sub_id(res: &Arc<Resource>, face: &mut Arc<FaceState>, mode: InterestMode) -> u32 {
+    println!("make_sub_id");
     if mode.future() {
         if let Some(id) = face_hat!(face).local_subs.get(res) {
             *id
@@ -943,6 +973,7 @@ pub(crate) fn declare_sub_interest(
     aggregate: bool,
     send_declare: &mut SendDeclare,
 ) {
+    println!("declare_sub_interest");
     if mode.current() {
         let interest_id = (!mode.future()).then_some(id);
         if let Some(res) = res.as_ref() {
@@ -1066,6 +1097,7 @@ impl HatPubSubTrait for HatCode {
         node_id: NodeId,
         send_declare: &mut SendDeclare,
     ) {
+        println!("declare_subscription");
         match face.whatami {
             WhatAmI::Router => {
                 if let Some(router) = get_router(tables, face, node_id) {
@@ -1101,6 +1133,7 @@ impl HatPubSubTrait for HatCode {
         node_id: NodeId,
         send_declare: &mut SendDeclare,
     ) -> Option<Arc<Resource>> {
+        println!("undeclare_subscription");
         match face.whatami {
             WhatAmI::Router => {
                 if let Some(mut res) = res {
@@ -1141,6 +1174,7 @@ impl HatPubSubTrait for HatCode {
     }
 
     fn get_subscriptions(&self, tables: &Tables) -> Vec<(Arc<Resource>, Sources)> {
+        println!("get_subscriptions");
         // Compute the list of known suscriptions (keys)
         hat!(tables)
             .router_subs
@@ -1184,6 +1218,7 @@ impl HatPubSubTrait for HatCode {
         source: NodeId,
         source_type: WhatAmI,
     ) -> Arc<Route> {
+        println!("compute_data_route");
         #[inline]
         fn insert_faces_for_subs(
             route: &mut Route,
@@ -1193,6 +1228,7 @@ impl HatPubSubTrait for HatCode {
             source: NodeId,
             subs: &HashSet<ZenohIdProto>,
         ) {
+            println!("insert_faces_for_subs");
             if net.trees.len() > source as usize {
                 for sub in subs {
                     if let Some(sub_idx) = net.get_idx(sub) {
@@ -1310,6 +1346,7 @@ impl HatPubSubTrait for HatCode {
     }
 
     fn get_data_routes_entries(&self, tables: &Tables) -> RoutesIndexes {
+        println!("get_data_routes_entries");
         get_routes_entries(tables)
     }
 
@@ -1319,6 +1356,7 @@ impl HatPubSubTrait for HatCode {
         tables: &Tables,
         key_expr: &KeyExpr<'_>,
     ) -> HashMap<usize, Arc<FaceState>> {
+        println!("get_matching_subscriptions");
         #[inline]
         fn insert_faces_for_subs(
             route: &mut HashMap<usize, Arc<FaceState>>,
