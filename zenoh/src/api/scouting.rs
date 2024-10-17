@@ -279,6 +279,7 @@ impl<Receiver> Scout<Receiver> {
     /// # }
     /// ```
     pub fn stop(self) {
+        println!("scout stop........");
         self.scout.stop()
     }
 }
@@ -288,7 +289,7 @@ fn _scout(
     config: zenoh_config::Config,
     callback: Callback<Hello>,
 ) -> ZResult<ScoutInner> {
-    tracing::trace!("scout({}, {})", what, &config);
+    println!("scout({}, {})", what, &config);
     let default_addr = SocketAddr::from(zenoh_config::defaults::scouting::multicast::address);
     let addr = config.scouting.multicast.address().unwrap_or(default_addr);
     let default_multicast_ttl = zenoh_config::defaults::scouting::multicast::ttl;
@@ -369,6 +370,7 @@ where
     <TryIntoConfig as std::convert::TryInto<crate::config::Config>>::Error:
         Into<zenoh_result::Error>,
 {
+    println!("scout................");
     ScoutBuilder {
         what: what.into(),
         config: config.try_into().map_err(|e| e.into()),

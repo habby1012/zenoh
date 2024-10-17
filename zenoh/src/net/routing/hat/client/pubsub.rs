@@ -51,6 +51,7 @@ fn propagate_simple_subscription_to(
     src_face: &mut Arc<FaceState>,
     send_declare: &mut SendDeclare,
 ) {
+    println!("propagate_simple_subscription_to");
     if src_face.id != dst_face.id
         && !face_hat!(dst_face).local_subs.contains_key(res)
         && (src_face.whatami == WhatAmI::Client || dst_face.whatami == WhatAmI::Client)
@@ -84,6 +85,7 @@ fn propagate_simple_subscription(
     src_face: &mut Arc<FaceState>,
     send_declare: &mut SendDeclare,
 ) {
+    println!("propagate_simple_subscription");
     for mut dst_face in tables
         .faces
         .values()
@@ -108,6 +110,7 @@ fn register_simple_subscription(
     res: &mut Arc<Resource>,
     sub_info: &SubscriberInfo,
 ) {
+    println!("register_simple_subscription");
     // Register subscription
     {
         let res = get_mut_unchecked(res);
@@ -137,6 +140,7 @@ fn declare_simple_subscription(
     sub_info: &SubscriberInfo,
     send_declare: &mut SendDeclare,
 ) {
+    println!("declare_simple_subscription");
     register_simple_subscription(tables, face, id, res, sub_info);
 
     propagate_simple_subscription(tables, res, sub_info, face, send_declare);
@@ -164,6 +168,7 @@ fn declare_simple_subscription(
 
 #[inline]
 fn simple_subs(res: &Arc<Resource>) -> Vec<Arc<FaceState>> {
+    println!("simple_subs");
     res.session_ctxs
         .values()
         .filter_map(|ctx| {
@@ -181,6 +186,7 @@ fn propagate_forget_simple_subscription(
     res: &Arc<Resource>,
     send_declare: &mut SendDeclare,
 ) {
+    println!("propagate_forget_simple_subscription");
     for face in tables.faces.values_mut() {
         if let Some(id) = face_hat_mut!(face).local_subs.remove(res) {
             send_declare(
@@ -209,6 +215,7 @@ pub(super) fn undeclare_simple_subscription(
     res: &mut Arc<Resource>,
     send_declare: &mut SendDeclare,
 ) {
+    println!("undeclare_simple_subscription");
     if !face_hat_mut!(face).remote_subs.values().any(|s| *s == *res) {
         if let Some(ctx) = get_mut_unchecked(res).session_ctxs.get_mut(&face.id) {
             get_mut_unchecked(ctx).subs = None;
@@ -248,6 +255,7 @@ fn forget_simple_subscription(
     id: SubscriberId,
     send_declare: &mut SendDeclare,
 ) -> Option<Arc<Resource>> {
+    println!("forget_simple_subscription");
     if let Some(mut res) = face_hat_mut!(face).remote_subs.remove(&id) {
         undeclare_simple_subscription(tables, face, &mut res, send_declare);
         Some(res)
@@ -261,6 +269,7 @@ pub(super) fn pubsub_new_face(
     face: &mut Arc<FaceState>,
     send_declare: &mut SendDeclare,
 ) {
+    println!("pubsub_new_face");
     let sub_info = SubscriberInfo;
     for src_face in tables
         .faces
@@ -294,6 +303,7 @@ impl HatPubSubTrait for HatCode {
         _node_id: NodeId,
         send_declare: &mut SendDeclare,
     ) {
+        println!("declare_subscription");
         declare_simple_subscription(tables, face, id, res, sub_info, send_declare);
     }
 
@@ -306,10 +316,12 @@ impl HatPubSubTrait for HatCode {
         _node_id: NodeId,
         send_declare: &mut SendDeclare,
     ) -> Option<Arc<Resource>> {
+        println!("undeclare_subscription");
         forget_simple_subscription(tables, face, id, send_declare)
     }
 
     fn get_subscriptions(&self, tables: &Tables) -> Vec<(Arc<Resource>, Sources)> {
+        println!("get_subscriptions");
         // Compute the list of known suscriptions (keys)
         let mut subs = HashMap::new();
         for src_face in tables.faces.values() {
@@ -334,6 +346,7 @@ impl HatPubSubTrait for HatCode {
         source: NodeId,
         source_type: WhatAmI,
     ) -> Arc<Route> {
+        println!("compute_data_route");
         let mut route = HashMap::new();
         let key_expr = expr.full_expr();
         if key_expr.ends_with('/') {
@@ -432,6 +445,7 @@ impl HatPubSubTrait for HatCode {
     }
 
     fn get_data_routes_entries(&self, _tables: &Tables) -> RoutesIndexes {
+        println!("get_data_routes_entries");
         get_routes_entries()
     }
 
@@ -441,6 +455,7 @@ impl HatPubSubTrait for HatCode {
         tables: &Tables,
         key_expr: &KeyExpr<'_>,
     ) -> HashMap<usize, Arc<FaceState>> {
+        println!("get_matching_subscriptions");
         let mut matching_subscriptions = HashMap::new();
         if key_expr.ends_with('/') {
             return matching_subscriptions;
