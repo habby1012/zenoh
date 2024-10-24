@@ -88,7 +88,7 @@ fn send_sourced_subscription_to_net_children(
                         ));
                     }
                 }
-                None => tracing::trace!("Unable to find face for zid {}", net.graph[*child].zid),
+                None => println!("[router!!] Unable to find face for zid {}", net.graph[*child].zid),
             }
         }
     }
@@ -205,16 +205,16 @@ fn propagate_sourced_subscription(
                     tree_sid.index() as NodeId,
                 );
             } else {
-                tracing::trace!(
-                    "Propagating sub {}: tree for node {} sid:{} not yet ready",
+                println!(
+                    "[router!!] Propagating sub {}: tree for node {} sid:{} not yet ready",
                     res.expr(),
                     tree_sid.index(),
                     source
                 );
             }
         }
-        None => tracing::error!(
-            "Error propagating sub {}: cannot get index of {}!",
+        None => println!(
+            "[router!! error] Error propagating sub {}: cannot get index of {}!",
             res.expr(),
             source
         ),
@@ -420,7 +420,7 @@ fn send_forget_sourced_subscription_to_net_children(
                         ));
                     }
                 }
-                None => tracing::trace!("Unable to find face for zid {}", net.graph[*child].zid),
+                None => println!("[router!!] Unable to find face for zid {}", net.graph[*child].zid),
             }
         }
     }
@@ -558,16 +558,16 @@ fn propagate_forget_sourced_subscription(
                     Some(tree_sid.index() as NodeId),
                 );
             } else {
-                tracing::trace!(
-                    "Propagating forget sub {}: tree for node {} sid:{} not yet ready",
+                println!(
+                    "[router!!] Propagating forget sub {}: tree for node {} sid:{} not yet ready",
                     res.expr(),
                     tree_sid.index(),
                     source
                 );
             }
         }
-        None => tracing::error!(
-            "Error propagating forget sub {}: cannot get index of {}!",
+        None => println!(
+            "[router!! error] Error propagating forget sub {}: cannot get index of {}!",
             res.expr(),
             source
         ),
@@ -819,7 +819,7 @@ pub(super) fn pubsub_tree_change(
     let net = match hat!(tables).get_net(net_type) {
         Some(net) => net,
         None => {
-            tracing::error!("Error accessing net in pubsub_tree_change!");
+            println!("[router!! error] Error accessing net in pubsub_tree_change!");
             return;
         }
     };
@@ -1253,7 +1253,7 @@ impl HatPubSubTrait for HatCode {
                     }
                 }
             } else {
-                tracing::trace!("Tree for node sid:{} not yet ready", source);
+                println!("[router!!] Tree for node sid:{} not yet ready", source);
             }
         }
 
@@ -1262,8 +1262,8 @@ impl HatPubSubTrait for HatCode {
         if key_expr.ends_with('/') {
             return Arc::new(route);
         }
-        tracing::trace!(
-            "compute_data_route({}, {:?}, {:?})",
+        println!(
+            "[router!!] compute_data_route({}, {:?}, {:?})",
             key_expr,
             source,
             source_type
@@ -1271,7 +1271,7 @@ impl HatPubSubTrait for HatCode {
         let key_expr = match OwnedKeyExpr::try_from(key_expr) {
             Ok(ke) => ke,
             Err(e) => {
-                tracing::warn!("Invalid KE reached the system: {}", e);
+                println!("[router!! warn] Invalid KE reached the system: {}", e);
                 return Arc::new(route);
             }
         };
@@ -1380,7 +1380,7 @@ impl HatPubSubTrait for HatCode {
                     }
                 }
             } else {
-                tracing::trace!("Tree for node sid:{} not yet ready", source);
+                println!("[router!!] Tree for node sid:{} not yet ready", source);
             }
         }
 
@@ -1388,7 +1388,7 @@ impl HatPubSubTrait for HatCode {
         if key_expr.ends_with('/') {
             return matching_subscriptions;
         }
-        tracing::trace!("get_matching_subscriptions({})", key_expr,);
+        println!("[router!!] get_matching_subscriptions({})", key_expr,);
 
         let res = Resource::get_resource(&tables.root_res, key_expr);
         let matches = res

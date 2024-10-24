@@ -54,8 +54,8 @@ pub(crate) fn declare_subscription(
         .cloned()
     {
         Some(mut prefix) => {
-            tracing::debug!(
-                "{} Declare subscriber {} ({}{})",
+            println!(
+                "[dispatcher!!] {} Declare subscriber {} ({}{})",
                 face,
                 id,
                 prefix.expr(),
@@ -107,8 +107,8 @@ pub(crate) fn declare_subscription(
             }
             drop(wtables);
         }
-        None => tracing::error!(
-            "{} Declare subscriber {} for unknown scope {}!",
+        None => println!(
+            "[dispatcher!! error] {} Declare subscriber {} for unknown scope {}!",
             face,
             id,
             expr.scope
@@ -134,8 +134,8 @@ pub(crate) fn undeclare_subscription(
             Some(prefix) => match Resource::get_resource(prefix, expr.suffix.as_ref()) {
                 Some(res) => Some(res),
                 None => {
-                    tracing::error!(
-                        "{} Undeclare unknown subscriber {}{}!",
+                    println!(
+                        "[dispatcher!! error] {} Undeclare unknown subscriber {}{}!",
                         face,
                         prefix.expr(),
                         expr.suffix
@@ -144,8 +144,8 @@ pub(crate) fn undeclare_subscription(
                 }
             },
             None => {
-                tracing::error!(
-                    "{} Undeclare subscriber with unknown scope {}",
+                println!(
+                    "[dispatcher!! error] {} Undeclare subscriber with unknown scope {}",
                     face,
                     expr.scope
                 );
@@ -157,7 +157,7 @@ pub(crate) fn undeclare_subscription(
     if let Some(mut res) =
         hat_code.undeclare_subscription(&mut wtables, face, id, res, node_id, send_declare)
     {
-        tracing::debug!("{} Undeclare subscriber {} ({})", face, id, res.expr());
+        println!("[dispatcher!!] {} Undeclare subscriber {} ({})", face, id, res.expr());
         disable_matches_data_routes(&mut wtables, &mut res);
         drop(wtables);
 
@@ -174,7 +174,7 @@ pub(crate) fn undeclare_subscription(
         Resource::clean(&mut res);
         drop(wtables);
     } else {
-        tracing::error!("{} Undeclare unknown subscriber {}", face, id);
+        println!("[dispatcher!! error] {} Undeclare unknown subscriber {}", face, id);
     }
 }
 
@@ -309,15 +309,15 @@ macro_rules! treat_timestamp {
                         Ok(()) => (),
                         Err(e) => {
                             if $drop {
-                                tracing::error!(
-                                    "Error treating timestamp for received Data ({}). Drop it!",
+                                println!(
+                                    "[dispatcher!! error] Error treating timestamp for received Data ({}). Drop it!",
                                     e
                                 );
                                 return;
                             } else {
                                 data.timestamp = Some(hlc.new_timestamp());
-                                tracing::error!(
-                                    "Error treating timestamp for received Data ({}). Replace timestamp: {:?}",
+                                println!(
+                                    "[dispatcher!! error] Error treating timestamp for received Data ({}). Replace timestamp: {:?}",
                                     e,
                                     data.timestamp);
                             }
@@ -326,7 +326,7 @@ macro_rules! treat_timestamp {
                 } else {
                     // Timestamp not present; add one
                     data.timestamp = Some(hlc.new_timestamp());
-                    tracing::trace!("Adding timestamp to DataInfo: {:?}", data.timestamp);
+                    println!("[dispatcher!!] Adding timestamp to DataInfo: {:?}", data.timestamp);
                 }
             }
         }
@@ -523,8 +523,8 @@ pub fn route_data(
             }
         }
         None => {
-            tracing::error!(
-                "{} Route data with unknown scope {}!",
+            println!(
+                "[dispatcher!! error] {} Route data with unknown scope {}!",
                 face,
                 msg.wire_expr.scope
             );

@@ -595,8 +595,8 @@ impl HatPubSubTrait for HatCode {
         if key_expr.ends_with('/') {
             return Arc::new(route);
         }
-        tracing::trace!(
-            "compute_data_route({}, {:?}, {:?})",
+        println!(
+            "[peer!!] compute_data_route({}, {:?}, {:?})",
             key_expr,
             source,
             source_type
@@ -604,7 +604,7 @@ impl HatPubSubTrait for HatCode {
         let key_expr = match OwnedKeyExpr::try_from(key_expr) {
             Ok(ke) => ke,
             Err(e) => {
-                tracing::warn!("Invalid KE reached the system: {}", e);
+                println!("[peer!! warn] Invalid KE reached the system: {}", e);
                 return Arc::new(route);
             }
         };
@@ -715,7 +715,7 @@ impl HatPubSubTrait for HatCode {
         if key_expr.ends_with('/') {
             return matching_subscriptions;
         }
-        tracing::trace!("get_matching_subscriptions({})", key_expr,);
+        println!("[peer!!] get_matching_subscriptions({})", key_expr,);
         let res = Resource::get_resource(&tables.root_res, key_expr);
         let matches = res
             .as_ref()
