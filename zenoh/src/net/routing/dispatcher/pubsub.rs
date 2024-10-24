@@ -47,6 +47,7 @@ pub(crate) fn declare_subscription(
     node_id: NodeId,
     send_declare: &mut SendDeclare,
 ) {
+    println!("[dispatcher!!] declare_subscription");
     let rtables = zread!(tables.tables);
     match rtables
         .get_mapping(face, &expr.scope, expr.mapping)
@@ -124,7 +125,7 @@ pub(crate) fn undeclare_subscription(
     node_id: NodeId,
     send_declare: &mut SendDeclare,
 ) {
-    tracing::debug!("Undeclare subscription {}", face);
+    println!("[dispatcher!!] undeclare_subscription");
     let res = if expr.is_empty() {
         None
     } else {
@@ -178,6 +179,7 @@ pub(crate) fn undeclare_subscription(
 }
 
 fn compute_data_routes_(tables: &Tables, routes: &mut DataRoutes, expr: &mut RoutingExpr) {
+    println!("[dispatcher!!] compute_data_routes_");
     let indexes = tables.hat_code.get_data_routes_entries(tables);
 
     let max_idx = indexes.routers.iter().max().unwrap();
@@ -218,12 +220,14 @@ fn compute_data_routes_(tables: &Tables, routes: &mut DataRoutes, expr: &mut Rou
 }
 
 pub(crate) fn compute_data_routes(tables: &Tables, expr: &mut RoutingExpr) -> DataRoutes {
+    println!("[dispatcher!!] compute_data_routes");
     let mut routes = DataRoutes::default();
     compute_data_routes_(tables, &mut routes, expr);
     routes
 }
 
 pub(crate) fn update_data_routes(tables: &Tables, res: &mut Arc<Resource>) {
+    println!("[dispatcher!!] update_data_routes");
     if res.context.is_some() {
         let mut res_mut = res.clone();
         let res_mut = get_mut_unchecked(&mut res_mut);
@@ -236,6 +240,7 @@ pub(crate) fn update_data_routes(tables: &Tables, res: &mut Arc<Resource>) {
 }
 
 pub(crate) fn update_data_routes_from(tables: &mut Tables, res: &mut Arc<Resource>) {
+    println!("[dispatcher!!] update_data_routes_from");
     update_data_routes(tables, res);
     let res = get_mut_unchecked(res);
     for child in res.children.values_mut() {
@@ -247,6 +252,7 @@ pub(crate) fn compute_matches_data_routes<'a>(
     tables: &'a Tables,
     res: &'a Arc<Resource>,
 ) -> Vec<(Arc<Resource>, DataRoutes)> {
+    println!("[dispatcher!!] compute_matches_data_routes");
     let mut routes = vec![];
     if res.context.is_some() {
         let mut expr = RoutingExpr::new(res, "");
@@ -264,10 +270,11 @@ pub(crate) fn compute_matches_data_routes<'a>(
 }
 
 pub(crate) fn update_matches_data_routes<'a>(tables: &'a mut Tables, res: &'a mut Arc<Resource>) {
+    println!("[dispatcher!!] update_matches_data_routes");
     if res.context.is_some() {
         update_data_routes(tables, res);
         for match_ in &res.context().matches {
-            let mut match_ = match_.upgrade().unwrap();
+            let mut match_: Arc<Resource> = match_.upgrade().unwrap();
             if !Arc::ptr_eq(&match_, res) {
                 update_data_routes(tables, &mut match_);
             }
@@ -276,6 +283,7 @@ pub(crate) fn update_matches_data_routes<'a>(tables: &'a mut Tables, res: &'a mu
 }
 
 pub(crate) fn disable_matches_data_routes(_tables: &mut Tables, res: &mut Arc<Resource>) {
+    println!("[dispatcher!!] disable_matches_data_routes");
     if res.context.is_some() {
         get_mut_unchecked(res).context_mut().disable_data_routes();
         for match_ in &res.context().matches {
@@ -333,6 +341,7 @@ fn get_data_route(
     expr: &mut RoutingExpr,
     routing_context: NodeId,
 ) -> Arc<Route> {
+    println!("[dispatcher!!] get_data_route");
     let local_context = tables
         .hat_code
         .map_routing_context(tables, face, routing_context);
@@ -400,8 +409,8 @@ pub fn route_data(
         .cloned()
     {
         Some(prefix) => {
-            tracing::trace!(
-                "{} Route data for res {}{}",
+            println!(
+                "[dispatcher!!] {} Route data for res {} {}",
                 face,
                 prefix.expr(),
                 msg.wire_expr.suffix.as_ref()
