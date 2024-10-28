@@ -52,10 +52,14 @@ fn propagate_simple_subscription_to(
     send_declare: &mut SendDeclare,
 ) {
     println!("[client!!] propagate_simple_subscription_to");
+
+    // Checks if the destination face needs the subscription, then registers it locally and sends a subscription declaration.
+    // Not so sure why at least one of src and dst has to be client?
     if src_face.id != dst_face.id
         && !face_hat!(dst_face).local_subs.contains_key(res)
         && (src_face.whatami == WhatAmI::Client || dst_face.whatami == WhatAmI::Client)
     {
+        println!("propogate to {} {}, from {} {}", dst_face.whatami, dst_face.id, src_face.whatami, src_face.id);
         let id = face_hat!(dst_face).next_id.fetch_add(1, Ordering::SeqCst);
         face_hat_mut!(dst_face).local_subs.insert(res.clone(), id);
         let key_expr = Resource::decl_key(res, dst_face, true);
@@ -80,18 +84,21 @@ fn propagate_simple_subscription_to(
 
 fn propagate_simple_subscription(
     tables: &mut Tables,
-    res: &Arc<Resource>,
+    res: &Arc<Resource>,       
     sub_info: &SubscriberInfo,
     src_face: &mut Arc<FaceState>,
     send_declare: &mut SendDeclare,
 ) {
     println!("[client!!] propagate_simple_subscription");
+
+    // Loops through all destination faces, preparing to propagate the subscription to each.
     for mut dst_face in tables
         .faces
         .values()
         .cloned()
         .collect::<Vec<Arc<FaceState>>>()
     {
+        println!("propogate to {} {}, from {} {}", dst_face.whatami, dst_face.id, src_face.whatami, src_face.id);
         propagate_simple_subscription_to(
             tables,
             &mut dst_face,
@@ -141,9 +148,13 @@ fn declare_simple_subscription(
     send_declare: &mut SendDeclare,
 ) {
     println!("[client!!] declare_simple_subscription");
+
+    // Registers the subscription on the current face, associating it with the specified resource.
     register_simple_subscription(tables, face, id, res, sub_info);
 
+    // Propagates the subscription across other faces in the table to ensure network-wide awareness.
     propagate_simple_subscription(tables, res, sub_info, face, send_declare);
+
     // This introduced a buffer overflow on windows
     // @TODO: Let's deactivate this on windows until Fixed
     #[cfg(not(windows))]
@@ -304,6 +315,8 @@ impl HatPubSubTrait for HatCode {
         send_declare: &mut SendDeclare,
     ) {
         println!("[client!!] declare_subscription");
+
+        // Initiates the declaration of a subscription, registering and propagating it across relevant nodes.
         declare_simple_subscription(tables, face, id, res, sub_info, send_declare);
     }
 

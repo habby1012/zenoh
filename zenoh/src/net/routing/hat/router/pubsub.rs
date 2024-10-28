@@ -258,6 +258,8 @@ fn declare_router_subscription(
     send_declare: &mut SendDeclare,
 ) {
     println!("[router!!] declare_router_subscription");
+
+
     register_router_subscription(tables, face, res, sub_info, router, send_declare);
 }
 
@@ -1117,9 +1119,13 @@ impl HatPubSubTrait for HatCode {
                         )
                     }
                 } else {
+
+                    // Initiates the declaration of a subscription, registering and propagating it across relevant nodes. 
                     declare_simple_subscription(tables, face, id, res, sub_info, send_declare)
                 }
             }
+
+            // Initiates the declaration of a subscription, registering and propagating it across relevant nodes.
             _ => declare_simple_subscription(tables, face, id, res, sub_info, send_declare),
         }
     }

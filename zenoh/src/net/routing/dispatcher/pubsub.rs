@@ -55,8 +55,9 @@ pub(crate) fn declare_subscription(
     {
         Some(mut prefix) => {
             println!(
-                "[dispatcher!!] {} Declare subscriber {} ({}{})",
+                "[dispatcher!!] {} {} Declare subscriber {} ({}{})",
                 face,
+                face.whatami,
                 id,
                 prefix.expr(),
                 expr.suffix
@@ -82,6 +83,7 @@ pub(crate) fn declare_subscription(
                     (res, wtables)
                 };
 
+            // Declares a subscription for a given resource (`res`) on the specified face,
             hat_code.declare_subscription(
                 &mut wtables,
                 face,
