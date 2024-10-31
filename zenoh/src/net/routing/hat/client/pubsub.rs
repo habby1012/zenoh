@@ -98,7 +98,7 @@ fn propagate_simple_subscription(
         .cloned()
         .collect::<Vec<Arc<FaceState>>>()
     {
-        println!("propogate to {} {}, from {} {}", dst_face.whatami, dst_face.id, src_face.whatami, src_face.id);
+        println!("propogate {} {}, from {} {}", dst_face.whatami, dst_face.id, src_face.whatami, src_face.id);
         propagate_simple_subscription_to(
             tables,
             &mut dst_face,

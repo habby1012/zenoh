@@ -116,6 +116,7 @@ fn propagate_simple_subscription_to(
                     || hat!(tables).failover_brokering(src_face.zid, dst_face.zid))
         }
     {
+        println!("propogate to {} {}, from {} {}", dst_face.whatami, dst_face.id, src_face.whatami, src_face.id);
         let matching_interests = face_hat!(dst_face)
             .remote_interests
             .values()
@@ -170,6 +171,7 @@ fn propagate_simple_subscription(
         .cloned()
         .collect::<Vec<Arc<FaceState>>>()
     {
+        println!("propogate {} {}, from {} {}", dst_face.whatami, dst_face.id, src_face.whatami, src_face.id);
         propagate_simple_subscription_to(
             tables,
             &mut dst_face,
