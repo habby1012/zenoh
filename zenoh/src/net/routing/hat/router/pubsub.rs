@@ -1236,6 +1236,7 @@ impl HatPubSubTrait for HatCode {
             source: NodeId,
             subs: &HashSet<ZenohIdProto>,
         ) {
+            println!("[router!!] {:?}",tables);
             println!("[router!!] insert_faces_for_subs");
             if net.trees.len() > source as usize {
                 for sub in subs {

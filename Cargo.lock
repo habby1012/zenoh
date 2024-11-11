@@ -1147,6 +1147,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.52",
+ "unicode-xid",
 ]
 
 [[package]]
@@ -5328,6 +5329,7 @@ dependencies = [
  "ahash",
  "async-trait",
  "bytes",
+ "derive_more",
  "flume",
  "futures",
  "git-version",

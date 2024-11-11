@@ -32,6 +32,7 @@ use zenoh_task::TaskController;
 use zenoh_transport::multicast::TransportMulticast;
 #[cfg(feature = "stats")]
 use zenoh_transport::stats::TransportStats;
+use derive_more::Debug;
 
 use super::{
     super::router::*,
@@ -47,30 +48,41 @@ use crate::{
     },
 };
 
+#[derive(Debug)]
 pub(crate) struct InterestState {
     pub(crate) options: InterestOptions,
+    #[debug(skip)]
     pub(crate) res: Option<Arc<Resource>>,
     pub(crate) finalized: bool,
 }
 
+#[derive(Debug)]
 pub struct FaceState {
     pub(crate) id: usize,
     pub(crate) zid: ZenohIdProto,
     pub(crate) whatami: WhatAmI,
     #[cfg(feature = "stats")]
     pub(crate) stats: Option<Arc<TransportStats>>,
+    #[debug(skip)]
     pub(crate) primitives: Arc<dyn crate::net::primitives::EPrimitives + Send + Sync>,
     pub(crate) local_interests: HashMap<InterestId, InterestState>,
+    #[debug(skip)]
     pub(crate) remote_key_interests: HashMap<InterestId, Option<Arc<Resource>>>,
+    #[debug(skip)]
     pub(crate) pending_current_interests:
         HashMap<InterestId, (Arc<CurrentInterest>, CancellationToken)>,
+    #[debug(skip)]
     pub(crate) local_mappings: HashMap<ExprId, Arc<Resource>>,
+    #[debug(skip)]
     pub(crate) remote_mappings: HashMap<ExprId, Arc<Resource>>,
     pub(crate) next_qid: RequestId,
+    #[debug(skip)]
     pub(crate) pending_queries: HashMap<RequestId, (Arc<Query>, CancellationToken)>,
     pub(crate) mcast_group: Option<TransportMulticast>,
+    #[debug(skip)]
     pub(crate) in_interceptors: Option<Arc<InterceptorsChain>>,
     pub(crate) hat: Box<dyn Any + Send + Sync>,
+    #[debug(skip)]
     pub(crate) task_controller: TaskController,
 }
 
@@ -427,6 +439,7 @@ impl Primitives for Face {
 
 impl fmt::Display for Face {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.state.fmt(f)
+        // self.state.fmt(f)
+        std::fmt::Display::fmt(&self.state, f)
     }
 }
