@@ -11,6 +11,9 @@
 // Contributors:
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
+use derive_more::Debug;
+use std::fmt;
+
 use std::{
     any::Any,
     collections::HashMap,
@@ -89,6 +92,14 @@ pub(crate) struct DataRoutes {
     pub(crate) clients: Vec<Arc<Route>>,
 }
 
+impl Debug for DataRoutes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("routers: {:?}\n    ", self.routers))?;
+        f.write_fmt(format_args!("peers: {:?}\n    ", self.peers))?;
+        f.write_fmt(format_args!("clients: {:?}\n", self.clients))
+    }
+}
+
 impl DataRoutes {
     #[inline]
     pub(crate) fn get_route(&self, whatami: WhatAmI, context: NodeId) -> Option<Arc<Route>> {
@@ -139,6 +150,12 @@ pub(crate) struct ResourceContext {
     pub(crate) query_routes: QueryRoutes,
 }
 
+impl Debug for ResourceContext {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Debug::fmt(&self.data_routes, f)
+    }
+}
+
 impl ResourceContext {
     fn new(hat: Box<dyn Any + Send + Sync>) -> ResourceContext {
         ResourceContext {
@@ -177,6 +194,12 @@ pub struct Resource {
     pub(crate) children: HashMap<String, Arc<Resource>>,
     pub(crate) context: Option<ResourceContext>,
     pub(crate) session_ctxs: HashMap<usize, Arc<SessionContext>>,
+}
+
+impl Debug for Resource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Debug::fmt(&self.context, f)
+    }
 }
 
 impl PartialEq for Resource {

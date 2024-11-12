@@ -359,7 +359,10 @@ impl HatPubSubTrait for HatCode {
         source: NodeId,
         source_type: WhatAmI,
     ) -> Arc<Route> {
+        
+        println!("[client!!] {:?}",tables);
         println!("[client!!] compute_data_route");
+
         let mut route = HashMap::new();
         let key_expr = expr.full_expr();
         if key_expr.ends_with('/') {

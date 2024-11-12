@@ -329,6 +329,7 @@ macro_rules! treat_timestamp {
                     // Timestamp not present; add one
                     data.timestamp = Some(hlc.new_timestamp());
                     println!("[dispatcher!!] Adding timestamp to DataInfo: {:?}", data.timestamp);
+                    println!("----------------------------------------------------------------------------------------------------------------------");
                 }
             }
         }
@@ -343,7 +344,14 @@ fn get_data_route(
     expr: &mut RoutingExpr,
     routing_context: NodeId,
 ) -> Arc<Route> {
+    
     println!("[dispatcher!!] get_data_route");
+    if let Some(resource) = res {
+        println!("[dispatcher!!]\nData route of resource:\n    {:?}\n", resource);
+    } else {
+        println!("[dispatcher!!]\nData route of resource: None\n");
+    }
+
     let local_context = tables
         .hat_code
         .map_routing_context(tables, face, routing_context);
@@ -405,12 +413,13 @@ pub fn route_data(
     mut msg: Push,
     reliability: Reliability,
 ) {
-    let tables = zread!(tables_ref.tables);
+    let tables: std::sync::RwLockReadGuard<'_, Tables> = zread!(tables_ref.tables);
     match tables
         .get_mapping(face, &msg.wire_expr.scope, msg.wire_expr.mapping)
         .cloned()
     {
         Some(prefix) => {
+            println!("----------------------------------------------------------------------------------------------------------------------\n");
             println!(
                 "[dispatcher!!] {} Route data for res {} {}",
                 face,
@@ -432,9 +441,11 @@ pub fn route_data(
                 let res = Resource::get_resource(&prefix, expr.suffix);
 
                 let route = get_data_route(&tables, face, &res, &mut expr, msg.ext_nodeid.node_id);
+                println!("route length = {}", route.len());
 
                 if !route.is_empty() {
                     treat_timestamp!(&tables.hlc, msg.payload, tables.drop_future_timestamp);
+                    print!("\n");
 
                     if route.len() == 1 {
                         let (outface, key_expr, context) = route.values().next().unwrap();

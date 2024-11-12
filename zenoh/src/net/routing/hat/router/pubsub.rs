@@ -1226,7 +1226,10 @@ impl HatPubSubTrait for HatCode {
         source: NodeId,
         source_type: WhatAmI,
     ) -> Arc<Route> {
+        
+        println!("[router!!] {:?}",tables);
         println!("[router!!] compute_data_route");
+
         #[inline]
         fn insert_faces_for_subs(
             route: &mut Route,
@@ -1236,7 +1239,6 @@ impl HatPubSubTrait for HatCode {
             source: NodeId,
             subs: &HashSet<ZenohIdProto>,
         ) {
-            println!("[router!!] {:?}",tables);
             println!("[router!!] insert_faces_for_subs");
             if net.trees.len() > source as usize {
                 for sub in subs {

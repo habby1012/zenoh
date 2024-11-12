@@ -56,34 +56,37 @@ pub(crate) struct InterestState {
     pub(crate) finalized: bool,
 }
 
-#[derive(Debug)]
 pub struct FaceState {
     pub(crate) id: usize,
     pub(crate) zid: ZenohIdProto,
     pub(crate) whatami: WhatAmI,
     #[cfg(feature = "stats")]
     pub(crate) stats: Option<Arc<TransportStats>>,
-    #[debug(skip)]
     pub(crate) primitives: Arc<dyn crate::net::primitives::EPrimitives + Send + Sync>,
     pub(crate) local_interests: HashMap<InterestId, InterestState>,
-    #[debug(skip)]
     pub(crate) remote_key_interests: HashMap<InterestId, Option<Arc<Resource>>>,
-    #[debug(skip)]
     pub(crate) pending_current_interests:
         HashMap<InterestId, (Arc<CurrentInterest>, CancellationToken)>,
-    #[debug(skip)]
     pub(crate) local_mappings: HashMap<ExprId, Arc<Resource>>,
-    #[debug(skip)]
     pub(crate) remote_mappings: HashMap<ExprId, Arc<Resource>>,
     pub(crate) next_qid: RequestId,
-    #[debug(skip)]
     pub(crate) pending_queries: HashMap<RequestId, (Arc<Query>, CancellationToken)>,
     pub(crate) mcast_group: Option<TransportMulticast>,
-    #[debug(skip)]
     pub(crate) in_interceptors: Option<Arc<InterceptorsChain>>,
     pub(crate) hat: Box<dyn Any + Send + Sync>,
-    #[debug(skip)]
     pub(crate) task_controller: TaskController,
+}
+
+impl Debug for FaceState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("")?;
+        f.write_fmt(format_args!("id: {:?}\n", self.id))?;
+        f.write_fmt(format_args!("               zid: {:?}\n", self.zid))?;
+        f.write_fmt(format_args!("               whatami: {:?}\n", self.whatami))?;
+        f.write_fmt(format_args!("               local_interests: {:?}\n", self.local_interests))?;
+        f.write_fmt(format_args!("               mcast_group: {:?}", self.mcast_group))?;
+        f.write_str("\n          ")
+    }
 }
 
 impl FaceState {
