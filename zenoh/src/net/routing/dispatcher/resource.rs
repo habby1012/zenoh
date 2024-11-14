@@ -95,8 +95,8 @@ pub(crate) struct DataRoutes {
 impl Debug for DataRoutes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("routers: {:?}\n    ", self.routers))?;
-        f.write_fmt(format_args!("peers: {:?}\n    ", self.peers))?;
-        f.write_fmt(format_args!("clients: {:?}\n", self.clients))
+        f.write_fmt(format_args!("     peers: {:?}\n    ", self.peers))?;
+        f.write_fmt(format_args!("     clients: {:?}\n", self.clients))
     }
 }
 
@@ -158,6 +158,7 @@ impl Debug for ResourceContext {
 
 impl ResourceContext {
     fn new(hat: Box<dyn Any + Send + Sync>) -> ResourceContext {
+        println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!disable_data_routes\n");
         ResourceContext {
             matches: Vec::new(),
             hat,
@@ -169,11 +170,13 @@ impl ResourceContext {
     }
 
     pub(crate) fn update_data_routes(&mut self, data_routes: DataRoutes) {
+        println!("update_data_routes!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
         self.valid_data_routes = true;
         self.data_routes = data_routes;
     }
 
     pub(crate) fn disable_data_routes(&mut self) {
+        println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!disable_data_routes\n");
         self.valid_data_routes = false;
     }
 
@@ -287,8 +290,10 @@ impl Resource {
         match &self.context {
             Some(ctx) => {
                 if ctx.valid_data_routes {
+                    print!("valid!!!!");
                     ctx.data_routes.get_route(whatami, context)
                 } else {
+                    print!("unvalid!!!!");
                     None
                 }
             }

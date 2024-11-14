@@ -344,17 +344,19 @@ fn get_data_route(
     expr: &mut RoutingExpr,
     routing_context: NodeId,
 ) -> Arc<Route> {
+    let local_context = tables
+        .hat_code
+        .map_routing_context(tables, face, routing_context);
+    
     
     println!("[dispatcher!!] get_data_route");
     if let Some(resource) = res {
-        println!("[dispatcher!!]\nData route of resource:\n    {:?}\n", resource);
+        println!("[dispatcher!!]\nGoing to find route of resource {:?} in following resource table:\n    {:?}\n", local_context, resource);
     } else {
         println!("[dispatcher!!]\nData route of resource: None\n");
     }
 
-    let local_context = tables
-        .hat_code
-        .map_routing_context(tables, face, routing_context);
+
     res.as_ref()
         .and_then(|res| res.data_route(face.whatami, local_context))
         .unwrap_or_else(|| {
