@@ -14,27 +14,43 @@
 use std::time::{Duration, Instant};
 
 use clap::Parser;
-use zenoh::{bytes::ZBytes, key_expr::keyexpr, qos::CongestionControl, Config, Wait};
+use zenoh::{
+    bytes::ZBytes, key_expr::keyexpr, qos::CongestionControl, qos::Priority, Config, Wait,
+};
 use zenoh_examples::CommonArgs;
 
 fn main() {
     // initiate logging
     zenoh::init_log_from_env_or("error");
 
-    let (config, warmup, size, n, express) = parse_args();
+    let (mut config, warmup, size, n, express, priority, topic) = parse_args();
+    let pong_topic = format!("{}pong", topic);
     let session = zenoh::open(config).wait().unwrap();
 
     // The key expression to publish data on
-    let key_expr_ping = keyexpr::new("test/ping").unwrap();
+    let key_expr_ping = keyexpr::new(&topic).unwrap();
 
-    // The key expression to wait the response back
-    let key_expr_pong = keyexpr::new("test/pong").unwrap();
+    // The key expression to wait for the response back
+    let key_expr_pong = keyexpr::new(&pong_topic).unwrap();
 
     let sub = session.declare_subscriber(key_expr_pong).wait().unwrap();
     let publisher = session
         .declare_publisher(key_expr_ping)
         .congestion_control(CongestionControl::Block)
         .express(express)
+        .priority(match priority.as_str() {
+            "RealTime" => Priority::RealTime,
+            "InteractiveHigh" => Priority::InteractiveHigh,
+            "InteractiveLow" => Priority::InteractiveLow,
+            "DataHigh" => Priority::DataHigh,
+            "Data" => Priority::Data,
+            "DataLow" => Priority::DataLow,
+            "Background" => Priority::Background,
+            _ => {
+                eprintln!("Invalid priority: {}. Using default 'Data'.", priority);
+                Priority::Data
+            }
+        })
         .wait()
         .unwrap();
 
@@ -78,22 +94,34 @@ fn main() {
 
 #[derive(Parser)]
 struct Args {
+    /// The priority for messages (RealTime, InteractiveHigh, InteractiveLow, DataHigh, Data, DataLow, Background)
+    #[arg(long, default_value = "Data")]
+    priority: String,
+
+    /// The topic for Ping messages
+    #[arg(long, default_value = "test/ping")]
+    topic: String,
+
     /// express for sending data
     #[arg(long, default_value = "false")]
     no_express: bool,
+
     #[arg(short, long, default_value = "1")]
     /// The number of seconds to warm up (float)
     warmup: f64,
+
     #[arg(short = 'n', long, default_value = "100")]
     /// The number of round-trips to measure
     samples: usize,
+
     /// Sets the size of the payload to publish
     payload_size: usize,
+
     #[command(flatten)]
     common: CommonArgs,
 }
 
-fn parse_args() -> (Config, Duration, usize, usize, bool) {
+fn parse_args() -> (Config, Duration, usize, usize, bool, String, String) {
     let args = Args::parse();
     (
         args.common.into(),
@@ -101,5 +129,7 @@ fn parse_args() -> (Config, Duration, usize, usize, bool) {
         args.payload_size,
         args.samples,
         !args.no_express,
+        args.priority,
+        args.topic,
     )
 }
