@@ -213,6 +213,7 @@ impl StageIn {
     ) -> bool {
         // Lock the current serialization batch.
         let mut c_guard = self.mutex.current();
+        println!("Stage_in Start pushing network message with priority: {:?}", priority);
 
         macro_rules! zgetbatch_rets {
             ($($restore_sn:stmt)?) => {
@@ -232,6 +233,7 @@ impl StageIn {
                                 drop(c_guard);
                                 // Wait for an available batch until deadline
                                 if !deadline.wait(&self.s_ref) {
+                                    println!("deadline occurs!!");
                                     // Still no available batch.
                                     // Restore the sequence number and drop the message
                                     $($restore_sn)?
@@ -462,6 +464,7 @@ impl StageOutIn {
     #[inline]
     fn try_pull(&mut self) -> Pull {
         if let Some(batch) = self.s_out_r.pull() {
+            println!("pull some data!");
             self.backoff.atomic.active.store(false, Ordering::Relaxed);
             return Pull::Some(batch);
         }
@@ -470,6 +473,7 @@ impl StageOutIn {
     }
 
     fn try_pull_deep(&mut self) -> Pull {
+        println!("try pull from deep");
         // Verify first backoff is not active
         let mut pull = !self.backoff.atomic.active.load(Ordering::Relaxed);
 
@@ -511,6 +515,7 @@ impl StageOutIn {
                 // An incomplete (non-empty) batch may be available in the state IN pipeline.
                 match g.take() {
                     Some(batch) => {
+                        println!("get pull from deep");
                         return Pull::Some(batch);
                     }
                     None => {
@@ -588,6 +593,7 @@ impl TransmissionPipeline {
         config: TransmissionPipelineConf,
         priority: &[TransportPriorityTx],
     ) -> (TransmissionPipelineProducer, TransmissionPipelineConsumer) {
+        println!("make TransmissionPipeline");
         let mut stage_in = vec![];
         let mut stage_out = vec![];
 
@@ -603,6 +609,7 @@ impl TransmissionPipeline {
         let (n_out_w, n_out_r) = event::new();
 
         for (prio, num) in size_iter.enumerate() {
+            println!("priority: {:?}, num: {:?}", prio, num);
             assert!(*num != 0 && *num <= RBLEN);
 
             // Create the refill ring buffer
@@ -684,6 +691,7 @@ pub(crate) struct TransmissionPipelineProducer {
 impl TransmissionPipelineProducer {
     #[inline]
     pub(crate) fn push_network_message(&self, mut msg: NetworkMessage) -> bool {
+        println!("TransmissionPipelineProducer push network message");
         // If the queue is not QoS, it means that we only have one priority with index 0.
         let (idx, priority) = if self.stage_in.len() > 1 {
             let priority = msg.priority();
@@ -744,6 +752,7 @@ impl TransmissionPipelineConsumer {
             let mut backoff = MicroSeconds::MAX;
             // Calculate the backoff maximum
             for (prio, queue) in self.stage_out.iter_mut().enumerate() {
+                println!("consumer pull prio: {:?}", prio);
                 match queue.try_pull() {
                     Pull::Some(batch) => {
                         return Some((batch, prio));
