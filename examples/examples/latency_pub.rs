@@ -14,7 +14,7 @@
 use std::time::Duration;
 
 use clap::Parser;
-use zenoh::{bytes::Encoding, key_expr::KeyExpr, Config};
+use zenoh::{bytes::Encoding, key_expr::KeyExpr, Config, qos::Priority};
 use zenoh_examples::CommonArgs;
 
 #[tokio::main]
@@ -22,13 +22,25 @@ async fn main() {
     // Initiate logging
     zenoh::init_log_from_env_or("error");
 
-    let (config, key_expr, payload, attachment, latency_budget) = parse_args();
+    let (config, key_expr, payload, attachment, latency_budget, priority) = parse_args();
 
     println!("Opening session...");
     let session = zenoh::open(config).await.unwrap();
 
     println!("Declaring Publisher on '{key_expr}'...");
-    let publisher = session.declare_publisher(&key_expr).await.unwrap();
+    let publisher = session.declare_publisher(&key_expr).priority(match priority.as_str() {
+        "RealTime" => Priority::RealTime,
+        "InteractiveHigh" => Priority::InteractiveHigh,
+        "InteractiveLow" => Priority::InteractiveLow,
+        "DataHigh" => Priority::DataHigh,
+        "Data" => Priority::Data,
+        "DataLow" => Priority::DataLow,
+        "Background" => Priority::Background,
+        _ => {
+            eprintln!("Invalid priority: {}. Using default 'Data'.", priority);
+            Priority::Data
+        }
+    }).await.unwrap();
 
     println!("Press CTRL-C to quit...");
     for idx in 0..u32::MAX {
@@ -37,12 +49,14 @@ async fn main() {
 
         let latency_budget = format!("{}", latency_budget.as_millis());
 
-        println!("Putting Data ('{}': '{}')...", &key_expr, buf);
+        let full_buf = format!("{}|{}", buf, latency_budget);
+
+        println!("Putting Data ('{}': '{}': latency_budget:'{}')...", &key_expr, buf, latency_budget);
         // Refer to z_bytes.rs to see how to serialize different types of message
         publisher
-            .put(buf)
+            .put(full_buf)
             .encoding(Encoding::TEXT_PLAIN) // Optionally set the encoding metadata 
-            .attachment(latency_budget) // Optionally add an attachment
+            .attachment(attachment.clone()) // Optionally add an attachment
             .await
             .unwrap();
     }
@@ -61,13 +75,16 @@ struct Args {
     attach: Option<String>,
     #[arg(short, long, default_value_t = 0)]
     latency_budget: u64,
+    /// The priority for messages (RealTime, InteractiveHigh, InteractiveLow, DataHigh, Data, DataLow, Background)
+    #[arg(long, default_value = "Data")]
+    priority: String,
     #[command(flatten)]
     common: CommonArgs,
 }
 
-fn parse_args() -> (Config, KeyExpr<'static>, String, Option<String>, Duration) {
+fn parse_args() -> (Config, KeyExpr<'static>, String, Option<String>, Duration, String) {
     let args = Args::parse();
     let latency_budget = Duration::from_millis(args.latency_budget);
-    (args.common.into(), args.key, args.payload, args.attach, latency_budget)
+    (args.common.into(), args.key, args.payload, args.attach, latency_budget, args.priority)
 }
 
