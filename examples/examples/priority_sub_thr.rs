@@ -77,14 +77,15 @@ fn main() {
 
     let session = zenoh::open(config).wait().unwrap();
 
-    let mut stats1 = Stats::new(n, "RealTime".to_string());
-    let mut stats2 = Stats::new(n, "Background".to_string());
+    let mut stats_realtime = Stats::new(n, "RealTime".to_string());
+    let mut stats_data = Stats::new(n, "Data".to_string());
+    let mut stats_background = Stats::new(n, "Background".to_string());
 
     session
-        .declare_subscriber("test/thr1")
+        .declare_subscriber("test/realtime")
         .callback_mut(move |_sample| {
-            stats1.increment();
-            if stats1.finished_rounds >= m {
+            stats_realtime.increment();
+            if stats_realtime.finished_rounds >= m {
                 std::process::exit(0)
             }
         })
@@ -93,10 +94,23 @@ fn main() {
         .unwrap();
 
     session
-        .declare_subscriber("test/thr2")
+        .declare_subscriber("test/data")
         .callback_mut(move |_sample| {
-            stats2.increment();
-            if stats2.finished_rounds >= m {
+            stats_data.increment();
+            if stats_data.finished_rounds >= m {
+                std::process::exit(0)
+            }
+        })
+        .background()
+        .wait()
+        .unwrap();            println!("get background!!!");
+
+
+    session
+        .declare_subscriber("test/background")
+        .callback_mut(move |_sample| {
+            stats_background.increment();
+            if stats_background.finished_rounds >= m {
                 std::process::exit(0)
             }
         })
@@ -113,7 +127,7 @@ struct Args {
     #[arg(short, long, default_value = "10")]
     /// Number of throughput measurements.
     samples: usize,
-    #[arg(short, long, default_value = "100000")]
+    #[arg(short, long, default_value = "1000")]
     /// Number of messages in each throughput measurements.
     number: usize,
     #[command(flatten)]
