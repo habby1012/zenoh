@@ -12,52 +12,66 @@
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
 use clap::Parser;
-use zenoh::{key_expr::keyexpr, qos::{CongestionControl, Priority}, Config, Wait};
+use zenoh::{
+    key_expr::keyexpr,
+    qos::{CongestionControl, Priority},
+    Config, Wait,
+};
 use zenoh_examples::CommonArgs;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 fn main() {
-    // initiate logging
+    // Initialize logging
     zenoh::init_log_from_env_or("error");
 
-    let (config, express, priority, topic) = parse_args();
-
-    let pong_topic = format!("{}pong", topic);
-    let pong_topic_static: &'static str = Box::leak(pong_topic.into_boxed_str());
-
+    let (config, express) = parse_args();
     let session = zenoh::open(config).wait().unwrap();
 
-    // The key expression to read the data from
-    let key_expr_ping = keyexpr::new(&topic).unwrap();
-
-    // The key expression to echo the data back
+    let topic = "data_realtime";
+    let pong_topic = format!("{}pong", topic);
+    let pong_topic_static: &'static str = Box::leak(pong_topic.into_boxed_str());
+    let key_expr_ping = keyexpr::new(topic).unwrap();
     let key_expr_pong = keyexpr::new(pong_topic_static).unwrap();
 
+    // Declare publisher for pong messages
     let publisher = session
         .declare_publisher(key_expr_pong)
         .congestion_control(CongestionControl::Block)
+        .priority(Priority::RealTime)
         .express(express)
-        .priority(match priority.as_str() {
-            "RealTime" => Priority::RealTime,
-            "InteractiveHigh" => Priority::InteractiveHigh,
-            "InteractiveLow" => Priority::InteractiveLow,
-            "DataHigh" => Priority::DataHigh,
-            "Data" => Priority::Data,
-            "DataLow" => Priority::DataLow,
-            "Background" => Priority::Background,
-            _ => {
-                eprintln!("Invalid priority: {}. Using default 'Data'.", priority);
-                Priority::Data
-            }
-        })
         .wait()
         .unwrap();
 
+    // Declare subscriber for ping messages and respond with pong
     session
         .declare_subscriber(key_expr_ping)
-        .callback(move |sample| publisher.put(sample.payload().clone()).wait().unwrap())
+        .callback(move |sample| {
+            let received_payload = sample.payload();
+            let payload_bytes: std::borrow::Cow<'_, [u8]> = received_payload.to_bytes();
+
+            let original_timestamp_bytes: [u8; 16] = payload_bytes[0..16]
+                .try_into()
+                .expect("Invalid timestamp length");
+            let original_timestamp = u128::from_be_bytes(original_timestamp_bytes);
+
+            let current_timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_micros();
+            let time_difference = current_timestamp - original_timestamp;
+
+            println!(
+                "Received message with original timestamp: {:?}µs, Time difference: {:?}µs",
+                original_timestamp, time_difference,
+            );
+
+            publisher.put(received_payload.clone()).wait().unwrap();
+        })
         .background()
         .wait()
         .unwrap();
+
+    // Park the thread to keep the process running
     std::thread::park();
 }
 
@@ -66,17 +80,11 @@ struct Args {
     /// express for sending data
     #[arg(long, default_value = "false")]
     no_express: bool,
-    /// The priority for messages (RealTime, InteractiveHigh, InteractiveLow, DataHigh, Data, DataLow, Background)
-    #[arg(long, default_value = "Data")]
-    priority: String,
-    /// The topic for Ping messages
-    #[arg(long, default_value = "test/ping")]
-    topic: String,
     #[command(flatten)]
     common: CommonArgs,
 }
 
-fn parse_args() -> (Config, bool, String, String) {
+fn parse_args() -> (Config, bool) {
     let args = Args::parse();
-    (args.common.into(), !args.no_express, args.priority, args.topic,)
+    (args.common.into(), !args.no_express)
 }

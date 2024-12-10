@@ -12,7 +12,6 @@
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
 
-use std::convert::TryInto;
 use std::thread;
 use std::time::Duration;
 
@@ -29,9 +28,9 @@ fn main() {
     zenoh::init_log_from_env_or("error");
     let args = Args::parse();
 
-    let mut prio_realtime = Priority::RealTime;
-    let mut prio_data = Priority::Data;
-    let mut prio_background = Priority::Background;
+    let prio_realtime = Priority::RealTime;
+    let prio_data = Priority::Data;
+    let prio_background = Priority::Background;
 
     let data_realtime: ZBytes = (0..100)
         .map(|i| (i % 10) as u8)
@@ -78,27 +77,24 @@ fn main() {
     let mut count: usize = 0;
     let mut start = std::time::Instant::now();
 
-    let handle_realtime = thread::spawn(move || {
+    let _handle_realtime = thread::spawn(move || {
         loop {
             publisher_realtime.put(data_realtime.clone()).wait().unwrap();
-            println!("put data_realtime");
-            thread::sleep(Duration::from_secs_f64(1.0 / 30.0));
+            thread::sleep(Duration::from_secs_f64(1.0 / 210.0));
         }
     });
 
-    let handle_data = thread::spawn(move || {
+    let _handle_data = thread::spawn(move || {
         loop {
             publisher_data.put(data_data.clone()).wait().unwrap();
-            println!("put data_data");
-            thread::sleep(Duration::from_secs_f64(1.0 / 20.0));
+            thread::sleep(Duration::from_secs_f64(1.0 / 140.0));
         }
     });
 
-    let handle_background = thread::spawn(move || {
+    let _handle_background = thread::spawn(move || {
         loop {
             publisher_background.put(data_background.clone()).wait().unwrap();
-            println!("put data_background");
-            thread::sleep(Duration::from_secs_f64(1.0 / 20.0));
+            thread::sleep(Duration::from_secs_f64(1.0 / 140.0));
         }
     });
 
