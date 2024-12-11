@@ -1,4 +1,3 @@
-use core::time;
 //
 // Copyright (c) 2023 ZettaScale Technology
 //
@@ -12,7 +11,7 @@ use core::time;
 // Contributors:
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use clap::Parser;
 use zenoh::{bytes::ZBytes, qos::CongestionControl, qos::Priority, Config, Wait};

@@ -1,0 +1,148 @@
+//
+// Copyright (c) 2023 ZettaScale Technology
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// http://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+//
+// Contributors:
+//   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
+//
+use std::time::Instant;
+
+use clap::Parser;
+use zenoh::{Config, Wait};
+use zenoh_examples::CommonArgs;
+
+struct Stats {
+    round_count: usize,
+    round_size: usize,
+    finished_rounds: usize,
+    round_start: Instant,
+    global_start: Option<Instant>,
+    priority: String,
+}
+impl Stats {
+    fn new(round_size: usize, priority: String) -> Self {
+        Stats {
+            round_count: 0,
+            round_size,
+            finished_rounds: 0,
+            round_start: Instant::now(),
+            global_start: None,
+            priority,
+        }
+    }
+    fn increment(&mut self) {
+        if self.round_count == 0 {
+            self.round_start = Instant::now();
+            if self.global_start.is_none() {
+                self.global_start = Some(self.round_start)
+            }
+            self.round_count += 1;
+        } else if self.round_count < self.round_size {
+            self.round_count += 1;
+        } else {
+            self.print_round();
+            self.finished_rounds += 1;
+            self.round_count = 1;
+            self.round_start = Instant::now(); // Reset start time for the next round
+        }
+    }
+    fn print_round(&self) {
+        let elapsed = self.round_start.elapsed().as_secs_f64();
+        println!(
+            "[{}] Round {}: Received {} messages in {:.2}s",
+            self.priority,
+            self.finished_rounds + 1,
+            self.round_count,
+            elapsed
+        );
+    }
+}
+impl Drop for Stats {
+    fn drop(&mut self) {
+        let Some(global_start) = self.global_start else {
+            return;
+        };
+        let elapsed = global_start.elapsed().as_secs_f64();
+        let total = self.round_size * self.finished_rounds + self.round_count;
+        let throughput = total as f64 / elapsed;
+        println!(
+            "[{}] Received {total} messages over {:.2}s: {:.2} msg/s",
+            self.priority, elapsed, throughput
+        );
+    }
+}
+
+fn main() {
+    // initiate logging
+    zenoh::init_log_from_env_or("error");
+
+    let (config, m, n) = parse_args();
+
+    let session = zenoh::open(config).wait().unwrap();
+
+    let mut stats_realtime = Stats::new(n, "RealTime".to_string());
+    let mut stats_data = Stats::new(n, "Data".to_string());
+    let mut stats_background = Stats::new(n, "Background".to_string());
+
+    session
+        .declare_subscriber("test/realtime")
+        .callback_mut(move |_sample| {
+            stats_realtime.increment();
+            if stats_realtime.finished_rounds >= m {
+                std::process::exit(0)
+            }
+        })
+        .background()
+        .wait()
+        .unwrap();
+
+    session
+        .declare_subscriber("test/data")
+        .callback_mut(move |_sample| {
+            stats_data.increment();
+            if stats_data.finished_rounds >= m {
+                std::process::exit(0)
+            }
+        })
+        .background()
+        .wait()
+        .unwrap();
+
+    session
+        .declare_subscriber("test/background")
+        .callback_mut(move |_sample| {
+            stats_background.increment();
+            if stats_background.finished_rounds >= m {
+                std::process::exit(0)
+            }
+        })
+        .background()
+        .wait()
+        .unwrap();
+
+    println!("Press CTRL-C to quit...");
+    std::thread::park();
+}
+
+#[derive(clap::Parser, Clone, PartialEq, Eq, Hash, Debug)]
+struct Args {
+    #[arg(short, long, default_value = "10")]
+    /// Number of throughput measurements.
+    round: usize,
+    #[arg(short, long, default_value = "1000")]
+    /// Number of messages in each throughput measurements.
+    round_size: usize,
+    #[command(flatten)]
+    common: CommonArgs,
+}
+
+fn parse_args() -> (Config, usize, usize) {
+    let args = Args::parse();
+    (args.common.into(), args.round, args.round_size)
+}

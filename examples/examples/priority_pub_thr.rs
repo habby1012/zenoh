@@ -80,21 +80,21 @@ fn main() {
     let _handle_realtime = thread::spawn(move || {
         loop {
             publisher_realtime.put(data_realtime.clone()).wait().unwrap();
-            thread::sleep(Duration::from_secs_f64(1.0 / 210.0));
+            thread::sleep(Duration::from_secs_f64(1.0 / 140000.0));
         }
     });
 
     let _handle_data = thread::spawn(move || {
         loop {
             publisher_data.put(data_data.clone()).wait().unwrap();
-            thread::sleep(Duration::from_secs_f64(1.0 / 140.0));
+            thread::sleep(Duration::from_secs_f64(1.0 / 140000.0));
         }
     });
 
     let _handle_background = thread::spawn(move || {
         loop {
             publisher_background.put(data_background.clone()).wait().unwrap();
-            thread::sleep(Duration::from_secs_f64(1.0 / 140.0));
+            thread::sleep(Duration::from_secs_f64(1.0 / 140000.0));
         }
     });
 
