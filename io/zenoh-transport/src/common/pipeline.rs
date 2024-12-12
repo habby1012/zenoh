@@ -667,6 +667,7 @@ impl TransmissionPipeline {
             stage_out: stage_out.into_boxed_slice(),
             n_out_r,
             active,
+            last_prio: 0,
         };
 
         (producer, consumer)
@@ -737,6 +738,7 @@ pub(crate) struct TransmissionPipelineConsumer {
     stage_out: Box<[StageOut]>,
     n_out_r: Waiter,
     active: Arc<AtomicBool>,
+    last_prio: usize,
 }
 
 impl TransmissionPipelineConsumer {
@@ -744,10 +746,16 @@ impl TransmissionPipelineConsumer {
         while self.active.load(Ordering::Relaxed) {
             let mut backoff = MicroSeconds::MAX;
             // Calculate the backoff maximum
-            for (prio, queue) in self.stage_out.iter_mut().enumerate() {
+
+            let num_priorities = self.stage_out.len();
+            for offset in 0..num_priorities {
+                let prio = (self.last_prio + offset) % num_priorities; // 計算優先級索引
+                let queue = &mut self.stage_out[prio];
+
                 match queue.try_pull() {
                     Pull::Some(batch) => {
                         println!("pull some batch {:?}", prio);
+                        self.last_prio = (prio + 1) % num_priorities; // 更新 `last_prio`
                         return Some((batch, prio));
                     }
                     Pull::Backoff(deadline) => {
@@ -758,13 +766,10 @@ impl TransmissionPipelineConsumer {
                 }
             }
 
-            // In case of writing many small messages, `recv_async()` will most likely return immedietaly.
-            // While trying to pull from the queue, the stage_in `lock()` will most likely taken, leading to
-            // a spinning behaviour while attempting to take the lock. Yield the current task to avoid
-            // spinning the current task indefinitely.
+            // 如果沒有拉取到任何數據，嘗試休眠
             tokio::task::yield_now().await;
 
-            // Wait for the backoff to expire or for a new message
+            // 等待 backoff 到期或有新消息進來
             let res = tokio::time::timeout(
                 Duration::from_micros(backoff as u64),
                 self.n_out_r.wait_async(),
@@ -772,15 +777,14 @@ impl TransmissionPipelineConsumer {
             .await;
             match res {
                 Ok(Ok(())) => {
-                    // We have received a notification from the channel that some bytes are available, retry to pull.
+                    // 有新消息通知，繼續嘗試拉取。
                 }
                 Ok(Err(_channel_error)) => {
-                    // The channel is closed, we can't be notified anymore. Break the loop and return None.
+                    // 通道已關閉，無法再接收通知，退出循環。
                     break;
                 }
                 Err(_timeout) => {
-                    // The backoff timeout expired. Be aware that tokio timeout may not sleep for short duration since
-                    // it has time resolution of 1ms: https://docs.rs/tokio/latest/tokio/time/fn.sleep.html
+                    // backoff 時間到期。
                 }
             }
         }
