@@ -134,6 +134,7 @@ impl LinkUnicastTrait for LinkUnicastTcp {
     }
 
     async fn write_all(&self, buffer: &[u8]) -> ZResult<()> {
+        println!("write all");
         self.get_mut_socket().write_all(buffer).await.map_err(|e| {
             let e = zerror!("Write error on TCP link {}: {}", self, e);
             tracing::trace!("{}", e);

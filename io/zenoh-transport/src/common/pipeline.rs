@@ -747,6 +747,7 @@ impl TransmissionPipelineConsumer {
             for (prio, queue) in self.stage_out.iter_mut().enumerate() {
                 match queue.try_pull() {
                     Pull::Some(batch) => {
+                        println!("pull some batch {:?}", prio);
                         return Some((batch, prio));
                     }
                     Pull::Backoff(deadline) => {
