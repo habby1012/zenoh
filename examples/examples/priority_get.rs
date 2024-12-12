@@ -12,6 +12,10 @@
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
 use std::time::Instant;
+use std::fs;
+use std::path::Path;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 use clap::Parser;
 use zenoh::{Config, Wait};
@@ -53,32 +57,64 @@ impl Stats {
         }
     }
     fn print_round(&self) {
-        let elapsed = self.round_start.elapsed().as_secs_f64();
-        println!(
-            "[{}] Round {}: Received {} messages in {:.2}s",
+        let elapsed = self.round_start.elapsed().as_secs_f64() * 1000.0;
+        let message = format!(
+            "[{}] Round {}: Received {} messages in {:.3} ms",
             self.priority,
             self.finished_rounds + 1,
             self.round_count,
             elapsed
         );
+
+        // Print to terminal
+        println!("{}", message);
+
+        // Write to file
+        let file_message = format!(
+            "Priority {}, {} message{}, {:.3} ms\n",
+            self.priority,
+            self.round_count,
+            if self.round_count > 1 { "s" } else { "" },
+            elapsed
+        );
+
+        if let Err(e) = self.write_to_file(&file_message) {
+            eprintln!("Failed to write to file: {}", e);
+        }
+    }
+
+    fn write_to_file(&self, content: &str) -> std::io::Result<()> {
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("output.txt")?;
+        file.write_all(content.as_bytes())
     }
 }
+
 impl Drop for Stats {
     fn drop(&mut self) {
         let Some(global_start) = self.global_start else {
             return;
         };
-        let elapsed = global_start.elapsed().as_secs_f64();
+        let elapsed = global_start.elapsed().as_secs_f64() * 1000.0;
         let total = self.round_size * self.finished_rounds + self.round_count;
-        let throughput = total as f64 / elapsed;
+        let throughput = (total as f64 / elapsed as f64) * 1000.0;
         println!(
-            "[{}] Received {total} messages over {:.2}s: {:.2} msg/s",
+            "[{}] Received {total} messages over {} ms: {:.2} msg/s",
             self.priority, elapsed, throughput
         );
     }
 }
 
 fn main() {
+    let output_file = "output.txt";
+    if Path::new(output_file).exists() {
+        if let Err(e) = fs::remove_file(output_file) {
+            eprintln!("Failed to remove {}: {}", output_file, e);
+        }
+    }
+
     // initiate logging
     zenoh::init_log_from_env_or("error");
 
