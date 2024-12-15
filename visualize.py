@@ -15,17 +15,17 @@ df = pd.DataFrame(data)
 df['CumulativeLatency'] = df.groupby('Priority')['Latency'].cumsum()
 
 plt.figure(figsize=(10, 6))
+
 for priority in df['Priority'].unique():
     subset = df[df['Priority'] == priority].reset_index()
     plt.plot(subset.index, subset['Latency'], label=f"{priority} Priority", linewidth=1)
 
-plt.ylim(0, 300)
+plt.ylim(0, 200)
 
-plt.title("Cumulative Latency by Priority")
+plt.title("Inter-arrival Time by Priority")
 plt.xlabel("Packet Number")
-plt.ylabel("Cumulative Time (ms)")
+plt.ylabel("Inter-arrival Time (ms)")
 plt.legend(title="Priority")
 plt.grid()
 
-plt.show()
-
+plt.savefig("latency_by_priority.png", dpi=300, bbox_inches='tight') 
