@@ -82,33 +82,42 @@ fn main() {
 
     let freq_realtime = args.frequency_realtime as f64;
     thread::spawn(move || {
+        let mut count_realtime = 0;
         loop {
             if let Err(e) = publisher_realtime.put(data_realtime.clone()).wait() {
                 eprintln!("Error sending RealTime message: {:?}", e);
                 break;
             }
+            count_realtime += 1;
+            println!("Realtime messages sent: {}", count_realtime);
             thread::sleep(Duration::from_secs_f64(1.0 / freq_realtime));
         }
     });
 
     let freq_data = args.frequency_data as f64;
     thread::spawn(move || {
+        let mut count_data = 0;
         loop {
             if let Err(e) = publisher_data.put(data_data.clone()).wait() {
                 eprintln!("Error sending Data message: {:?}", e);
                 break;
             }
+            count_data += 1;
+            println!("Data messages sent: {}", count_data);
             thread::sleep(Duration::from_secs_f64(1.0 / freq_data));
         }
     });
 
     let freq_background = args.frequency_background as f64;
     thread::spawn(move || {
+        let mut count_background = 0;
         loop {
             if let Err(e) = publisher_background.put(data_background.clone()).wait() {
                 eprintln!("Error sending Background message: {:?}", e);
                 break;
             }
+            count_background += 1;
+            println!("Background messages sent: {}", count_background);
             thread::sleep(Duration::from_secs_f64(1.0 / freq_background));
         }
     });
