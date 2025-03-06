@@ -24,7 +24,7 @@ use zenoh_link_commons::{
     LinkUnicastTrait, ListenersUnicastIP, NewLinkChannelSender,
 };
 use zenoh_protocol::{
-    core::{EndPoint, Locator},
+    core::{EndPoint, Locator, Priority},
     transport::BatchSize,
 };
 use zenoh_result::{bail, zerror, Error as ZError, ZResult};
@@ -33,6 +33,10 @@ use crate::{
     get_tcp_addrs, utils::TcpLinkConfig, TCP_ACCEPT_THROTTLE_TIME, TCP_DEFAULT_MTU,
     TCP_LINGER_TIMEOUT, TCP_LOCATOR_PREFIX,
 };
+
+use nix::sys::socket::sockopt::Priority as SocketPriority;
+use nix::sys::socket::{setsockopt};
+use std::os::unix::io::AsRawFd;
 
 pub struct LinkUnicastTcp {
     // The underlying socket as returned from the tokio library
@@ -95,6 +99,9 @@ impl LinkUnicastTcp {
             }
             mtu = (mtu as u32).min(tgt) as BatchSize;
         }
+
+        let fd = socket.as_raw_fd();
+        setsockopt(fd, SocketPriority, &3);
 
         // Build the Tcp object
         LinkUnicastTcp {
