@@ -25,6 +25,8 @@ use zenoh_protocol::{
     network::Mapping,
 };
 use zenoh_result::ZResult;
+use derive_more::Debug;
+use std::fmt;
 
 use super::face::FaceState;
 pub use super::resource::*;
@@ -79,6 +81,19 @@ pub struct Tables {
     pub(crate) hat: Box<dyn Any + Send + Sync>,
     pub(crate) hat_code: Arc<dyn HatTrait + Send + Sync>, // @TODO make this a Box
     pub(crate) routes_version: RoutesVersion,
+}
+
+impl Debug for Tables {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("\nTables {\n")?;
+        f.write_fmt(format_args!("    zid: {:?}\n", self.zid))?;
+        f.write_fmt(format_args!("    whatami: {:?}\n", self.whatami))?;
+        f.write_fmt(format_args!("    face_counter: {:?}\n", self.face_counter))?;
+        f.write_fmt(format_args!("    faces: {:?}\n", self.faces))?;
+        f.write_fmt(format_args!("    mcast_groups: {:?}\n", self.mcast_groups))?;
+        f.write_fmt(format_args!("    mcast_faces: {:?}\n", self.mcast_faces))?;
+        f.write_str("}")
+    }
 }
 
 impl Tables {

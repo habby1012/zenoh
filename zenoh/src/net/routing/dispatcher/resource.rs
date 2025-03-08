@@ -30,6 +30,8 @@ use zenoh_protocol::{
     },
 };
 use zenoh_sync::get_mut_unchecked;
+use derive_more::Debug;
+use std::fmt;
 
 use super::{
     face::FaceState,
@@ -89,6 +91,14 @@ pub(crate) struct Routes<T> {
     peers: Vec<Option<T>>,
     clients: Vec<Option<T>>,
     version: u64,
+}
+
+impl Debug for DataRoutes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("routers: {:?}\n    ", self.routers))?;
+        f.write_fmt(format_args!("peers: {:?}\n    ", self.peers))?;
+        f.write_fmt(format_args!("clients: {:?}\n", self.clients))
+    }
 }
 
 impl<T> Default for Routes<T> {
@@ -178,6 +188,13 @@ pub(crate) struct ResourceContext {
     pub(crate) query_routes: RwLock<QueryRoutes>,
 }
 
+impl Debug for ResourceContext {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Debug::fmt(&self.data_routes, f)
+    }
+}
+
+
 impl ResourceContext {
     fn new(hat: Box<dyn Any + Send + Sync>) -> ResourceContext {
         ResourceContext {
@@ -197,15 +214,29 @@ impl ResourceContext {
     }
 }
 
+#[derive(Debug)]
 pub struct Resource {
+    #[debug(skip)]
     pub(crate) parent: Option<Arc<Resource>>,
+    #[debug(skip)]
     pub(crate) expr: String,
+    #[debug(skip)]
     pub(crate) suffix: String,
+    #[debug(skip)]
     pub(crate) nonwild_prefix: Option<(Arc<Resource>, String)>,
+    #[debug(skip)]
     pub(crate) children: HashMap<String, Arc<Resource>>,
+    #[debug(skip)]
     pub(crate) context: Option<ResourceContext>,
+    #[debug(skip)]
     pub(crate) session_ctxs: HashMap<usize, Arc<SessionContext>>,
 }
+
+// impl Debug for Resource {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         Debug::fmt(&self.context, f)
+//     }
+// }
 
 impl PartialEq for Resource {
     fn eq(&self, other: &Self) -> bool {

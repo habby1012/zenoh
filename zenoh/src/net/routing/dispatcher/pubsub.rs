@@ -290,6 +290,11 @@ pub fn route_data(
     reliability: Reliability,
 ) {
     let tables = zread!(tables_ref.tables);
+    
+    println!("---------------route_data---------------\n");
+    println!("Tables: {:?}\n", tables);
+    println!("Face: {:?}\n", face);
+
     match tables
         .get_mapping(face, &wire_expr.scope, wire_expr.mapping)
         .cloned()

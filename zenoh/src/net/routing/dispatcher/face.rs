@@ -33,6 +33,7 @@ use zenoh_task::TaskController;
 use zenoh_transport::multicast::TransportMulticast;
 #[cfg(feature = "stats")]
 use zenoh_transport::stats::TransportStats;
+use derive_more::Debug;
 
 use super::{
     super::router::*,
@@ -51,9 +52,13 @@ use crate::{
     },
 };
 
+#[derive(Debug)]
 pub(crate) struct InterestState {
+    #[debug(skip)]
     pub(crate) options: InterestOptions,
+    #[debug(skip)]
     pub(crate) res: Option<Arc<Resource>>,
+    #[debug(skip)]
     pub(crate) finalized: bool,
 }
 
@@ -76,6 +81,21 @@ pub struct FaceState {
     pub(crate) in_interceptors: Option<Arc<InterceptorsChain>>,
     pub(crate) hat: Box<dyn Any + Send + Sync>,
     pub(crate) task_controller: TaskController,
+}
+
+impl Debug for FaceState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("")?;
+        f.write_fmt(format_args!("id: {:?}\n", self.id))?;
+        f.write_fmt(format_args!("               zid: {:?}\n", self.zid))?;
+        f.write_fmt(format_args!("               whatami: {:?}\n", self.whatami))?;
+        f.write_fmt(format_args!("               local_interests: {:?}\n", self.local_interests))?;
+        f.write_fmt(format_args!("               remote_key_interests: {:?}\n", self.remote_key_interests))?;
+        //f.write_fmt(format_args!("               remote_key_interests: {:?}\n", self.local_mappings))?;
+        //f.write_fmt(format_args!("               remote_key_interests: {:?}\n", self.remote_mappings))?;
+        //f.write_fmt(format_args!("               mcast_group: {:?}", self.mcast_group))?;
+        f.write_str("\n          ")
+    }
 }
 
 impl FaceState {
@@ -478,6 +498,6 @@ impl Primitives for Face {
 
 impl fmt::Display for Face {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.state.fmt(f)
+        std::fmt::Display::fmt(&self.state, f)
     }
 }
