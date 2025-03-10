@@ -214,29 +214,22 @@ impl ResourceContext {
     }
 }
 
-#[derive(Debug)]
 pub struct Resource {
-    #[debug(skip)]
     pub(crate) parent: Option<Arc<Resource>>,
-    #[debug(skip)]
     pub(crate) expr: String,
-    #[debug(skip)]
     pub(crate) suffix: String,
-    #[debug(skip)]
     pub(crate) nonwild_prefix: Option<(Arc<Resource>, String)>,
-    #[debug(skip)]
     pub(crate) children: HashMap<String, Arc<Resource>>,
-    #[debug(skip)]
     pub(crate) context: Option<ResourceContext>,
-    #[debug(skip)]
     pub(crate) session_ctxs: HashMap<usize, Arc<SessionContext>>,
 }
 
-// impl Debug for Resource {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         Debug::fmt(&self.context, f)
-//     }
-// }
+impl Debug for Resource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("expr: {:?},  ", self.expr))?;
+        f.write_fmt(format_args!("suffix: {:?}", self.suffix))
+    }
+}
 
 impl PartialEq for Resource {
     fn eq(&self, other: &Self) -> bool {
