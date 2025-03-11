@@ -52,14 +52,16 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
 pub(crate) struct InterestState {
-    #[debug(skip)]
     pub(crate) options: InterestOptions,
-    #[debug(skip)]
     pub(crate) res: Option<Arc<Resource>>,
-    #[debug(skip)]
     pub(crate) finalized: bool,
+}
+
+impl Debug for InterestState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{:?}", self.res))
+    }
 }
 
 pub struct FaceState {
@@ -91,8 +93,8 @@ impl Debug for FaceState {
         f.write_fmt(format_args!("               whatami: {:?}\n", self.whatami))?;
         f.write_fmt(format_args!("               local_interests: {:?}\n", self.local_interests))?;
         f.write_fmt(format_args!("               remote_key_interests: {:?}\n", self.remote_key_interests))?;
-        //f.write_fmt(format_args!("               remote_key_interests: {:?}\n", self.local_mappings))?;
-        //f.write_fmt(format_args!("               remote_key_interests: {:?}\n", self.remote_mappings))?;
+        f.write_fmt(format_args!("               local_mappings: {:?}\n", self.local_mappings))?;
+        f.write_fmt(format_args!("               remote_mappings: {:?}\n", self.remote_mappings))?;
         //f.write_fmt(format_args!("               mcast_group: {:?}", self.mcast_group))?;
         f.write_str("\n          ")
     }
