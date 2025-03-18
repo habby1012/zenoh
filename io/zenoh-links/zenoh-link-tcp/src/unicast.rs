@@ -100,8 +100,6 @@ impl LinkUnicastTcp {
             mtu = (mtu as u32).min(tgt) as BatchSize;
         }
 
-        let fd = socket.as_raw_fd();
-        setsockopt(fd, SocketPriority, &3);
 
         // Build the Tcp object
         LinkUnicastTcp {
