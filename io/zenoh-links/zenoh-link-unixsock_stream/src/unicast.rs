@@ -92,6 +92,22 @@ impl LinkUnicastTrait for LinkUnicastUnixSocketStream {
         })
     }
 
+    async fn write_with_priority(&self, buffer: &[u8], _priority: u8) -> ZResult<usize> {
+        self.get_mut_socket().write(buffer).await.map_err(|e| {
+            let e = zerror!("Write error on UnixSocketStream link {}: {}", self, e);
+            tracing::trace!("{}", e);
+            e.into()
+        })
+    }
+
+    async fn write_all_with_priority(&self, buffer: &[u8], _priority: u8) -> ZResult<()> {
+        self.get_mut_socket().write_all(buffer).await.map_err(|e| {
+            let e = zerror!("Write error on UnixSocketStream link {}: {}", self, e);
+            tracing::trace!("{}", e);
+            e.into()
+        })
+    }
+
     async fn read(&self, buffer: &mut [u8]) -> ZResult<usize> {
         self.get_mut_socket().read(buffer).await.map_err(|e| {
             let e = zerror!("Read error on UnixSocketStream link {}: {}", self, e);

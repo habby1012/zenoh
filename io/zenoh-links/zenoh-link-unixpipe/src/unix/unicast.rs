@@ -486,6 +486,14 @@ impl LinkUnicastTrait for UnicastPipe {
         self.get_w_mut().write_all(buffer).await
     }
 
+    async fn write_with_priority(&self, buffer: &[u8], _priority: u8) -> ZResult<usize> {
+        self.get_w_mut().write(buffer).await
+    }
+
+    async fn write_all_with_priority(&self, buffer: &[u8], _priority: u8) -> ZResult<()> {
+        self.get_w_mut().write_all(buffer).await
+    }
+
     async fn read(&self, buffer: &mut [u8]) -> ZResult<usize> {
         self.get_r_mut().read(buffer).await
     }

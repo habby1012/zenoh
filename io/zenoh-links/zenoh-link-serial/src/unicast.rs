@@ -156,6 +156,24 @@ impl LinkUnicastTrait for LinkUnicastSerial {
         Ok(())
     }
 
+    async fn write_with_priority(&self, buffer: &[u8], _priority: u8) -> ZResult<usize> {
+        let _guard = zasynclock!(self.write_lock);
+        self.get_port_mut()?.write(buffer).await.map_err(|e| {
+            let e = zerror!("Unable to write on Serial link {}: {}", self, e);
+            tracing::error!("{}", e);
+            e
+        })?;
+        Ok(buffer.len())
+    }
+
+    async fn write_all_with_priority(&self, buffer: &[u8], _priority: u8) -> ZResult<()> {
+        let mut written: usize = 0;
+        while written < buffer.len() {
+            written += self.write(&buffer[written..]).await?;
+        }
+        Ok(())
+    }
+
     async fn read(&self, buffer: &mut [u8]) -> ZResult<usize> {
         let _guard = zasynclock!(self.read_lock);
         match self.get_port_mut()?.read_msg(buffer).await {

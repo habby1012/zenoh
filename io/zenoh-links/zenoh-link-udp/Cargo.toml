@@ -29,7 +29,7 @@ tokio = { workspace = true, features = ["net", "io-util", "rt", "time"] }
 tokio-util = { workspace = true, features = ["rt"] }
 async-trait = { workspace = true }
 tracing = {workspace = true}
-socket2 = { workspace = true }
+socket2 = { workspace = true, version = "0.5.5" }
 zenoh-buffers = { workspace = true }
 zenoh-core = { workspace = true }
 zenoh-link-commons = { workspace = true }
@@ -37,3 +37,4 @@ zenoh-protocol = { workspace = true }
 zenoh-result = { workspace = true }
 zenoh-sync = { workspace = true }
 zenoh-util = { workspace = true }
+nix = { version = "0.26.2", features = ["socket"] }

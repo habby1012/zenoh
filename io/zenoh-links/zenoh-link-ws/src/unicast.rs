@@ -160,6 +160,27 @@ impl LinkUnicastTrait for LinkUnicastWs {
         Ok(())
     }
 
+    async fn write_with_priority(&self, buffer: &[u8], _priority: u8) -> ZResult<usize> {
+        let mut guard = zasynclock!(self.send);
+        let msg = buffer.into();
+
+        guard.send(msg).await.map_err(|e| {
+            let e = zerror!("Write error on WebSocket link {}: {}", self, e);
+            tracing::trace!("{}", e);
+            e
+        })?;
+
+        Ok(buffer.len())
+    }
+
+    async fn write_all_with_priority(&self, buffer: &[u8], _priority: u8) -> ZResult<()> {
+        let mut written: usize = 0;
+        while written < buffer.len() {
+            written += self.write(&buffer[written..]).await?;
+        }
+        Ok(())
+    }
+
     async fn read(&self, buffer: &mut [u8]) -> ZResult<usize> {
         let mut leftovers_guard = zasynclock!(self.leftovers);
 

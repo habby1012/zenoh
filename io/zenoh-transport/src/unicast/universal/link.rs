@@ -30,7 +30,7 @@ use crate::{
             TransmissionPipeline, TransmissionPipelineConf, TransmissionPipelineConsumer,
             TransmissionPipelineProducer,
         },
-        priority::TransportPriorityTx,
+        priority::{self, TransportPriorityTx},
     },
     unicast::link::{TransportLinkUnicast, TransportLinkUnicastRx, TransportLinkUnicastTx},
 };
@@ -184,7 +184,7 @@ async fn tx_task(
             res = tokio::time::timeout(keep_alive, pipeline.pull()) => {
                 match res {
                     Ok(Some((mut batch, priority))) => {
-                        link.send_batch(&mut batch).await?;
+                        link.send_batch(&mut batch, priority as u8).await?;
 
                         #[cfg(feature = "stats")]
                         {
@@ -222,8 +222,8 @@ async fn tx_task(
 
     // Drain the transmission pipeline and write remaining bytes on the wire
     let mut batches = pipeline.drain();
-    for (mut b, _) in batches.drain(..) {
-        tokio::time::timeout(keep_alive, link.send_batch(&mut b))
+    for (mut b, priority) in batches.drain(..) {
+        tokio::time::timeout(keep_alive, link.send_batch(&mut b, priority as u8))
             .await
             .map_err(|_| zerror!("{}: flush failed after {} ms", link, keep_alive.as_millis()))??;
 

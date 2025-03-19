@@ -24,7 +24,7 @@ use zenoh_link_commons::{
     LinkUnicastTrait, ListenersUnicastIP, NewLinkChannelSender,
 };
 use zenoh_protocol::{
-    core::{EndPoint, Locator, Priority},
+    core::{EndPoint, Locator},
     transport::BatchSize,
 };
 use zenoh_result::{bail, zerror, Error as ZError, ZResult};
@@ -35,7 +35,7 @@ use crate::{
 };
 
 use nix::sys::socket::sockopt::Priority as SocketPriority;
-use nix::sys::socket::{setsockopt};
+use nix::sys::socket::setsockopt;
 use std::os::unix::io::AsRawFd;
 
 pub struct LinkUnicastTcp {
@@ -141,6 +141,36 @@ impl LinkUnicastTrait for LinkUnicastTcp {
     async fn write_all(&self, buffer: &[u8]) -> ZResult<()> {
         self.get_mut_socket().write_all(buffer).await.map_err(|e| {
             let e = zerror!("Write error on TCP link {}: {}", self, e);
+            tracing::trace!("{}", e);
+            e.into()
+        })
+    }
+
+    async fn write_with_priority(&self, buffer: &[u8], priority: u8) -> ZResult<usize> {
+        let fd = self.get_mut_socket().as_raw_fd();
+        let priority_i32 = priority as i32;
+
+        if let Err(e) = setsockopt(fd, SocketPriority, &priority_i32) {
+            tracing::warn!("Failed to set TCP SO_PRIORITY: {}", e);
+        }
+
+        self.get_mut_socket().write(buffer).await.map_err(|e| {
+            let e = zerror!("Write error on TCP link {} with priority {}: {}", self, priority, e);
+            tracing::trace!("{}", e);
+            e.into()
+        })
+    }
+
+    async fn write_all_with_priority(&self, buffer: &[u8], priority: u8) -> ZResult<()> {
+        let fd = self.get_mut_socket().as_raw_fd();
+        let priority_i32 = priority as i32;
+    
+        if let Err(e) = setsockopt(fd, SocketPriority, &priority_i32) {
+            tracing::warn!("Failed to set TCP SO_PRIORITY: {}", e);
+        }
+    
+        self.get_mut_socket().write_all(buffer).await.map_err(|e| {
+            let e = zerror!("Write error on TCP link {} with priority {}: {}", self, priority, e);
             tracing::trace!("{}", e);
             e.into()
         })
