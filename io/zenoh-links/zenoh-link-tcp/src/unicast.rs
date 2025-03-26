@@ -149,8 +149,12 @@ impl LinkUnicastTrait for LinkUnicastTcp {
     async fn write_with_priority(&self, buffer: &[u8], priority: u8) -> ZResult<usize> {
         let fd = self.get_mut_socket().as_raw_fd();
         let priority_i32 = priority as i32;
+        
+        // Convert Zenoh priority (1 = highest) to Linux SO_PRIORITY (higher = higher priority).
+        // This ensures Zenoh priority 1 maps to SO_PRIORITY 6 (highest), 7 maps to 0 (lowest).
+        let so_priority = 7 - priority_i32;
 
-        if let Err(e) = setsockopt(fd, SocketPriority, &priority_i32) {
+        if let Err(e) = setsockopt(fd, SocketPriority, &so_priority) {
             tracing::warn!("Failed to set TCP SO_PRIORITY: {}", e);
         }
 
@@ -164,8 +168,12 @@ impl LinkUnicastTrait for LinkUnicastTcp {
     async fn write_all_with_priority(&self, buffer: &[u8], priority: u8) -> ZResult<()> {
         let fd = self.get_mut_socket().as_raw_fd();
         let priority_i32 = priority as i32;
-    
-        if let Err(e) = setsockopt(fd, SocketPriority, &priority_i32) {
+
+        // Convert Zenoh priority (1 = highest) to Linux SO_PRIORITY (higher = higher priority).
+        // This ensures Zenoh priority 1 maps to SO_PRIORITY 6 (highest), 7 maps to 0 (lowest).
+        let so_priority = 7 - priority_i32;
+
+        if let Err(e) = setsockopt(fd, SocketPriority, &so_priority) {
             tracing::warn!("Failed to set TCP SO_PRIORITY: {}", e);
         }
     
