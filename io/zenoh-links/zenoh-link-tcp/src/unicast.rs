@@ -24,7 +24,7 @@ use zenoh_link_commons::{
     LinkUnicastTrait, ListenersUnicastIP, NewLinkChannelSender,
 };
 use zenoh_protocol::{
-    core::{EndPoint, Locator, Priority},
+    core::{EndPoint, Locator},
     transport::BatchSize,
 };
 use zenoh_result::{bail, zerror, Error as ZError, ZResult};
@@ -35,7 +35,7 @@ use crate::{
 };
 
 use nix::sys::socket::sockopt::Priority as SocketPriority;
-use nix::sys::socket::{setsockopt};
+use nix::sys::socket::setsockopt;
 use std::os::unix::io::AsRawFd;
 
 pub struct LinkUnicastTcp {
@@ -101,9 +101,22 @@ impl LinkUnicastTcp {
         }
 
         let fd = socket.as_raw_fd();
-        let tail = src_addr.port() % 10;
-        let zenoh_priority = tail.clamp(1, 7) as u8;
+
+        let priority_port = if (7441..=7447).contains(&src_addr.port()) {
+            src_addr.port()
+        } else {
+            dst_addr.port()
+        };
+
+        let zenoh_priority = (priority_port % 10).clamp(1, 7) as u8;
         let prio = (7 - zenoh_priority) as i32;
+        println!(
+            "Establish TCP link: local={} → remote={}, mapped SO_PRIORITY={}",
+            src_addr,
+            dst_addr,
+            prio
+        );
+
         setsockopt(fd, SocketPriority, &prio);
 
         // Build the Tcp object

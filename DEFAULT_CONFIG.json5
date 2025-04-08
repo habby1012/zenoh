@@ -40,7 +40,13 @@
     ///
     /// See https://docs.rs/zenoh/latest/zenoh/config/struct.EndPoint.html
     endpoints: [
-      // "<proto>/<address>"
+      "tcp/192.168.2.2:7441?prio=1",
+      "tcp/192.168.2.2:7442?prio=2",
+      "tcp/192.168.2.2:7443?prio=3",
+      "tcp/192.168.2.2:7444?prio=4",
+      "tcp/192.168.2.2:7445?prio=5",
+      "tcp/192.168.2.2:7446?prio=6",
+      "tcp/192.168.2.2:7447?prio=7",
     ],
 
     /// Global connect configuration,
@@ -85,7 +91,15 @@
     /// or different lists for router, peer and client (e.g. endpoints: { router: ["tcp/[::]:7447"], peer: ["tcp/[::]:0"] }).
     ///
     /// See https://docs.rs/zenoh/latest/zenoh/config/struct.EndPoint.html
-    endpoints: { router: ["tcp/[::]:7447"], peer: ["tcp/[::]:0"] },
+    endpoints: [
+      "tcp/192.168.2.1:7441?prio=1",
+      "tcp/192.168.2.1:7442?prio=2",
+      "tcp/192.168.2.1:7443?prio=3",
+      "tcp/192.168.2.1:7444?prio=4",
+      "tcp/192.168.2.1:7445?prio=5",
+      "tcp/192.168.2.1:7446?prio=6",
+      "tcp/192.168.2.1:7447?prio=7",
+    ],
 
     /// Global listen configuration,
     /// Accepts a single value or different values for router, peer and client.
@@ -359,7 +373,7 @@
       /// Maximum number of transports that can be simultaneously alive for a single zenoh sessions
       max_sessions: 1000,
       /// Maximum number of incoming links that are admitted per transport
-      max_links: 1,
+      max_links: 1000,
       /// Enables the LowLatency transport
       /// This option does not make LowLatency transport mandatory, the actual implementation of transport
       /// used will depend on Establish procedure and other party's settings
