@@ -100,6 +100,11 @@ impl LinkUnicastTcp {
             mtu = (mtu as u32).min(tgt) as BatchSize;
         }
 
+        let fd = socket.as_raw_fd();
+        let tail = src_addr.port() % 10;
+        let zenoh_priority = tail.clamp(1, 7) as u8;
+        let prio = (7 - zenoh_priority) as i32;
+        setsockopt(fd, SocketPriority, &prio);
 
         // Build the Tcp object
         LinkUnicastTcp {
