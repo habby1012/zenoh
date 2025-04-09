@@ -1,77 +1,112 @@
-//
-// Copyright (c) 2023 ZettaScale Technology
-//
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
-// which is available at https://www.apache.org/licenses/LICENSE-2.0.
-//
-// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
-//
-// Contributors:
-//   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
-//
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::thread;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use clap::Parser;
 use zenoh::{bytes::ZBytes, qos::CongestionControl, qos::Priority, Config, Wait};
 use zenoh_examples::CommonArgs;
 
 fn main() {
-    // initiate logging
     zenoh::init_log_from_env_or("error");
 
-    let (config, size, n, express, priority) = parse_args();
+    let (config, size, n, express, user_priority) = parse_args();
     let session = zenoh::open(config).wait().unwrap();
 
-    let topic = "data";
-    let key_expr_ping = topic;
+    let dummy_data: Vec<u8> = (0..size - 16).map(|i| (i % 256) as u8).collect();
 
-    let publisher = session
-        .declare_publisher(key_expr_ping)
+    // Publisher 1: user-specified priority
+    let pub1 = session
+        .declare_publisher("data1")
         .congestion_control(CongestionControl::Block)
-        .priority(priority)
+        .priority(user_priority)
         .express(express)
         .wait()
         .unwrap();
 
-    // Create dummy data of user-defined size
-    let dummy_data: Vec<u8> = (0..size - 16)
-        .map(|i| (i % 256) as u8)
-        .collect();
+    // Publisher 2: priority 3
+    let pub2 = session
+        .declare_publisher("data2")
+        .congestion_control(CongestionControl::Block)
+        .priority(Priority::InteractiveLow)
+        .express(express)
+        .wait()
+        .unwrap();
 
-    for i in 0..n {
-        let sent_timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_micros()
-            .to_be_bytes();
+    // Publisher 3: priority 4
+    let pub3 = session
+        .declare_publisher("data3")
+        .congestion_control(CongestionControl::Block)
+        .priority(Priority::DataHigh)
+        .express(express)
+        .wait()
+        .unwrap();
 
-        let mut data = sent_timestamp.to_vec();
-        data.extend_from_slice(&dummy_data);
+    // Spawn three threads
+    let d1 = dummy_data.clone();
+    let t1 = thread::spawn(move || {
+        println!("Start sending to data1 with priority {:?}", user_priority);
+        for i in 0..n {
+            let ts = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_micros()
+                .to_be_bytes();
+            let mut data = ts.to_vec();
+            data.extend_from_slice(&d1);
+            pub1.put(ZBytes::from(data)).wait().unwrap();
+            println!("[data1] Sent message {} with priority {:?}", i + 1, user_priority);
+        }
+    });
 
-        publisher.put(ZBytes::from(data)).wait().unwrap();
+    let d2 = dummy_data.clone();
+    let t2 = thread::spawn(move || {
+        thread::sleep(Duration::from_secs(5));
+        println!("Start sending to data2 with priority 3");
+        for i in 0..n {
+            let ts = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_micros()
+                .to_be_bytes();
+            let mut data = ts.to_vec();
+            data.extend_from_slice(&d2);
+            pub2.put(ZBytes::from(data)).wait().unwrap();
+            println!("[data2] Sent message {} with priority 3", i + 1);
+        }
+    });
 
-        println!("Sent message {} with priority {:?}", i + 1, priority);
-    }
+    let d3 = dummy_data;
+    let t3 = thread::spawn(move || {
+        thread::sleep(Duration::from_secs(10));
+        println!("Start sending to data3 with priority 4");
+        for i in 0..n {
+            let ts = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_micros()
+                .to_be_bytes();
+            let mut data = ts.to_vec();
+            data.extend_from_slice(&d3);
+            pub3.put(ZBytes::from(data)).wait().unwrap();
+            println!("[data3] Sent message {} with priority 4", i + 1);
+        }
+    });
+
+    // Wait for all threads to finish
+    t1.join().unwrap();
+    t2.join().unwrap();
+    t3.join().unwrap();
 }
 
 #[derive(Parser)]
 struct Args {
     #[arg(short = 'n', long, default_value = "100")]
-    /// The number of round-trips to measure
     samples: usize,
     #[arg(short = 's', long, default_value = "128")]
-    /// Sets the size of the payload to publish
     payload_size: usize,
     #[arg(long, default_value = "false")]
-    /// Enable express mode
     express: bool,
-
     #[arg(short = 'p', long, default_value = "5")]
-    /// Set the priority level (1=RealTime, 2=InteractiveHigh, 3=InteractiveLow, 4=DataHigh, 5=Data, 6=DataLow, 7=Background)
     priority: u8,
-
     #[command(flatten)]
     common: CommonArgs,
 }
@@ -101,3 +136,4 @@ fn parse_args() -> (Config, usize, usize, bool, Priority) {
         priority,
     )
 }
+
