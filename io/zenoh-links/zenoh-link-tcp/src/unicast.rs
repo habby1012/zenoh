@@ -110,14 +110,14 @@ impl LinkUnicastTcp {
 
         let zenoh_priority = (priority_port % 10).clamp(1, 7) as u8;
         let prio = (7 - zenoh_priority) as i32;
-        println!(
-            "Establish TCP link: local={} → remote={}, mapped SO_PRIORITY={}",
-            src_addr,
-            dst_addr,
-            prio
-        );
+        // println!(
+        //     "Establish TCP link: local={} → remote={}, mapped SO_PRIORITY={}",
+        //     src_addr,
+        //     dst_addr,
+        //     prio
+        // );
 
-        setsockopt(fd, SocketPriority, &prio);
+        let _ = setsockopt(fd, SocketPriority, &prio);
 
         // Build the Tcp object
         LinkUnicastTcp {
