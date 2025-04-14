@@ -1,5 +1,5 @@
 use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use clap::Parser;
 use zenoh::{bytes::ZBytes, qos::CongestionControl, qos::Priority, Config, Wait};
@@ -16,7 +16,7 @@ fn main() {
     // Publisher 1: user-specified priority
     let pub1 = session
         .declare_publisher("data1")
-        .congestion_control(CongestionControl::Drop)
+        .congestion_control(CongestionControl::Block)
         .priority(user_priority)
         .express(express)
         .wait()
@@ -25,17 +25,17 @@ fn main() {
     // Publisher 2: priority 3
     let pub2 = session
         .declare_publisher("data2")
-        .congestion_control(CongestionControl::Drop)
+        .congestion_control(CongestionControl::Block)
         .priority(Priority::InteractiveLow)
         .express(express)
         .wait()
         .unwrap();
 
-    // Publisher 3: priority 4
+    // Publisher 3: priority 5
     let pub3 = session
         .declare_publisher("data3")
-        .congestion_control(CongestionControl::Drop)
-        .priority(Priority::DataHigh)
+        .congestion_control(CongestionControl::Block)
+        .priority(Priority::Data)
         .express(express)
         .wait()
         .unwrap();
@@ -59,7 +59,6 @@ fn main() {
 
     let d2 = dummy_data.clone();
     let t2 = thread::spawn(move || {
-        thread::sleep(Duration::from_secs(5));
         println!("Start sending to data2 with priority 3");
         for i in 0..n {
             let ts = SystemTime::now()
@@ -76,7 +75,6 @@ fn main() {
 
     let d3 = dummy_data;
     let t3 = thread::spawn(move || {
-        thread::sleep(Duration::from_secs(10));
         println!("Start sending to data3 with priority 4");
         for i in 0..n {
             let ts = SystemTime::now()
@@ -87,7 +85,7 @@ fn main() {
             let mut data = ts.to_vec();
             data.extend_from_slice(&d3);
             pub3.put(ZBytes::from(data)).wait().unwrap();
-            println!("[data3] Sent message {} with priority 4", i + 1);
+            println!("[data3] Sent message {} with priority 5", i + 1);
         }
     });
 
@@ -136,4 +134,3 @@ fn parse_args() -> (Config, usize, usize, bool, Priority) {
         priority,
     )
 }
-
