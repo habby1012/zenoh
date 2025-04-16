@@ -1,16 +1,3 @@
-//
-// Copyright (c) 2023 ZettaScale Technology
-//
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
-// which is available at https://www.apache.org/licenses/LICENSE-2.0.
-//
-// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
-//
-// Contributors:
-//   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
-//
 use clap::Parser;
 use std::time::{SystemTime, UNIX_EPOCH};
 use zenoh::{Config, Wait};
@@ -23,48 +10,62 @@ fn main() {
     let config = parse_args();
     let session = zenoh::open(config).wait().unwrap();
 
-    let topics = ["data1", "data2", "data3"];
-    let mut _subs = vec![];
+    // Subscribe to "data1"
+    let _sub_data1 = session
+        .declare_subscriber("data1")
+        .callback(|sample| {
+            handle_sample("data1", sample.payload().to_bytes());
+        })
+        .background()
+        .wait()
+        .unwrap();
 
-    for topic in topics {
-        let key_expr = topic.to_string();
-        let label = key_expr.clone();
+    // Subscribe to "data2"
+    let _sub_data2 = session
+        .declare_subscriber("data2")
+        .callback(|sample| {
+            handle_sample("data2", sample.payload().to_bytes());
+        })
+        .background()
+        .wait()
+        .unwrap();
 
-        let sub = session
-            .declare_subscriber(&key_expr)
-            .callback(move |sample| {
-                let received_payload = sample.payload();
-                let payload_bytes: std::borrow::Cow<'_, [u8]> = received_payload.to_bytes();
-
-                if payload_bytes.len() < 16 {
-                    eprintln!("Received data too small on {label}");
-                    return;
-                }
-
-                let original_timestamp_bytes: [u8; 16] = payload_bytes[0..16]
-                    .try_into()
-                    .expect("Invalid timestamp length");
-                let original_timestamp = u128::from_be_bytes(original_timestamp_bytes);
-
-                let current_timestamp = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_micros();
-                let time_difference = current_timestamp - original_timestamp;
-
-                println!(
-                    "[{}] Received: sent at {}µs, now {}µs, Δ = {}µs",
-                    label, original_timestamp, current_timestamp, time_difference,
-                );
-            })
-            .background()
-            .wait()
-            .unwrap();
-
-        _subs.push(sub);
-    }
+    // Subscribe to "data3"
+    let _sub_data3 = session
+        .declare_subscriber("data3")
+        .callback(|sample| {
+            handle_sample("data3", sample.payload().to_bytes());
+        })
+        .background()
+        .wait()
+        .unwrap();
 
     std::thread::park();
+}
+
+fn handle_sample(label: &str, payload_bytes: std::borrow::Cow<'_, [u8]>) {
+    if payload_bytes.len() < 16 {
+        eprintln!("Received data too small on {}", label);
+        return;
+    }
+
+    let original_timestamp_bytes: [u8; 16] = payload_bytes[0..16]
+        .try_into()
+        .expect("Invalid timestamp length");
+
+    let original_timestamp = u128::from_be_bytes(original_timestamp_bytes);
+
+    let current_timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_micros();
+
+    let time_difference = current_timestamp - original_timestamp;
+
+    println!(
+        "[{}] Received: sent at {}µs, now {}µs, Δ = {}µs",
+        label, original_timestamp, current_timestamp, time_difference,
+    );
 }
 
 #[derive(clap::Parser, Clone, PartialEq, Eq, Hash, Debug)]

@@ -118,4 +118,3 @@ fn calculate_latency(topic: &str, payload: &[u8]) {
     let latency = current_timestamp - original_timestamp;
     println!("{} | seq = {} | latency = {} µs", topic, seq, latency);
 }
-
