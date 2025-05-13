@@ -39,7 +39,7 @@ fn main() {
     let session = zenoh::open(config).wait().unwrap();
 
     // ---------------------- Load and spawn publishers ----------------------
-    let mut ex_pub = ReaderBuilder::new().has_headers(false).from_path("config/EX_sensing_perception.csv").unwrap();
+    let mut ex_pub = ReaderBuilder::new().has_headers(false).from_path("config/EX_sensing_perception_localization.csv").unwrap();
     for result in ex_pub.records() {
         let rec = result.unwrap();
         let topic_string = rec.get(0).unwrap().trim().to_string();
@@ -79,9 +79,9 @@ fn main() {
     // ---------------------- Load and spawn subscribers ----------------------
     let sub_files = vec![
         "config/EX_control_planning.csv",
-        "config/EX_localization_vehicle_system.csv"
+        "config/EX_vehicle_system.csv"
     ];
-    let this_module = "Sensing/Perception";
+    let this_module = "Sensing/Perception/Localization";
 
     let mut subscribers = Vec::new();
 
