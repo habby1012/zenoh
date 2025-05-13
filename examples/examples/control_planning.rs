@@ -78,8 +78,8 @@ fn main() {
 
     // ---------------------- Load and spawn subscribers ----------------------
     let sub_files = vec![
-        "config/EX_sensing_perception.csv",
-        "config/EX_localization_vehicle_system.csv"
+        "config/EX_sensing_perception_localization.csv",
+        "config/EX_vehicle_system.csv"
     ];
     let this_module = "Control/Planning";
 
