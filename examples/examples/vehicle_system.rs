@@ -10,6 +10,7 @@ use zenoh_examples::CommonArgs;
 use std::{thread, time::Duration};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::Arc;
+use rand::Rng;
 
 fn parse_byte_size(s: &str) -> usize {
     let s = s.trim().to_uppercase();
@@ -51,8 +52,8 @@ fn main() {
         let priority = match criticality {
             "Critical" => Priority::RealTime,
             "Time-Critical-Small" => Priority::InteractiveHigh,
-            "Time-Critical-Large" => Priority::InteractiveLow,
-            _ => Priority::Data,
+            "Time-Critical-Large" => Priority::DataHigh,
+            _ => Priority::Background,
         };
 
         let pub_decl = session
@@ -63,15 +64,27 @@ fn main() {
             .unwrap();
 
         let pub_arc = Arc::new(pub_decl);
-        let data = vec![0u8; size.saturating_sub(16)];
         let pub_clone = pub_arc.clone();
         thread::spawn(move || {
+            let mut rng = rand::thread_rng();
             loop {
+                let size_jitter_ratio = 0.1; // ±10%
+                let jitter_bytes = (size as f64 * size_jitter_ratio) as isize;
+                let delta = rng.gen_range(-jitter_bytes..=jitter_bytes);
+                let adjusted_size = (size as isize + delta).max(16) as usize;
+
                 let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros();
                 let mut payload = now.to_be_bytes().to_vec();
-                payload.extend_from_slice(&data);
+                payload.extend_from_slice(&vec![0u8; adjusted_size.saturating_sub(16)]);
+
                 pub_clone.put(ZBytes::from(payload)).wait().unwrap();
-                thread::sleep(Duration::from_secs_f64(1.0 / freq));
+
+                let base_sleep = 1.0 / freq;
+                let jitter_ratio = 0.2;
+                let jitter_range = base_sleep * jitter_ratio;
+                let jitter_s: f64 = rng.gen_range(-jitter_range..=jitter_range);
+                let sleep_duration = Duration::from_secs_f64((base_sleep + jitter_s).max(0.0));
+                thread::sleep(sleep_duration);
             }
         });
     }
