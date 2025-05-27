@@ -6,9 +6,9 @@ import numpy as np
 from collections import defaultdict
 
 # Input files
-index = "4"
+index = "1"
 log_file = f"/tmp/{index}.txt"
-config_file = "config/EX_topics.csv"
+config_file = "config/INTER_topics.csv"
 output_dir = f"/tmp/{index}"
 
 os.makedirs(output_dir, exist_ok=True)
