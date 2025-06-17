@@ -47,13 +47,15 @@ fn main() {
         let topic_static: &'static str = Box::leak(topic_string.into_boxed_str());
         let criticality = rec.get(1).unwrap().trim();
         let freq: f64 = rec.get(3).unwrap().trim().parse().unwrap_or(10.0);
+        if freq == 0.0 {
+           continue;
+        }
         let size: usize = parse_byte_size(rec.get(4).unwrap());
 
         let priority = match criticality {
             "Critical" => Priority::RealTime,
-            "Time-Critical-Small" => Priority::InteractiveHigh,
-            "Time-Critical-Large" => Priority::DataHigh,
-            _ => Priority::Background,
+            "Sensor" => Priority::InteractiveHigh,
+            _ => Priority::InteractiveLow,
         };
 
         let pub_decl = session
@@ -67,18 +69,28 @@ fn main() {
         let pub_clone = pub_arc.clone();
         thread::spawn(move || {
             let mut rng = rand::thread_rng();
+            let mut pkt_counter: u64 = 1;
             loop {
+                // Set data size
                 let size_jitter_ratio = 0.1; // ±10%
                 let jitter_bytes = (size as f64 * size_jitter_ratio) as isize;
                 let delta = rng.gen_range(-jitter_bytes..=jitter_bytes);
                 let adjusted_size = (size as isize + delta).max(16) as usize;
 
+                // Get time
                 let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros();
-                let mut payload = now.to_be_bytes().to_vec();
-                payload.extend_from_slice(&vec![0u8; adjusted_size.saturating_sub(16)]);
+
+                // First 8 bytes: packet sequence, then 16 bytes timestamp
+                let mut payload = pkt_counter.to_be_bytes().to_vec();
+                payload.extend_from_slice(&now.to_be_bytes());
+                payload.extend_from_slice(&vec![0u8; adjusted_size.saturating_sub(24)]);
 
                 pub_clone.put(ZBytes::from(payload)).wait().unwrap();
-                
+
+                // Add packet counter
+                pkt_counter += 1;
+
+                // Set sleep time
                 let base_sleep = 1.0 / freq;
                 let jitter_ratio = 0.2;
                 let jitter_range = base_sleep * jitter_ratio;
@@ -113,10 +125,11 @@ fn main() {
                     .callback(move |sample| {
                         let payload_buf = sample.payload().to_bytes();
                         let payload = payload_buf.as_ref();
-                        if payload.len() < 16 { return; }
-                        let ts = u128::from_be_bytes(payload[..16].try_into().unwrap());
+                        if payload.len() < 24 { return; }
+                        let pkt_id = u64::from_be_bytes(payload[..8].try_into().unwrap());
+                        let ts = u128::from_be_bytes(payload[8..24].try_into().unwrap());
                         let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros();
-                        println!("[{}] latency: {} µs", topic_clone, now - ts);
+                        println!("[{}] packet_id: {}  latency: {} µs", topic_clone, pkt_id, now - ts);
                     })
                     .wait()
                     .unwrap();
