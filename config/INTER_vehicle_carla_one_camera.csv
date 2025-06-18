@@ -1,0 +1,15 @@
+vehicle/status/actuation_status,Critical,Control/Planning,20,0.05K,1KB/s
+vehicle/status/control_mode,Critical,Control/Planning,20,0.02K,0.4KB/s
+vehicle/status/gear_status,Critical,Control/Planning,20,0.02K,0.4KB/s
+vehicle/status/steering_status,Critical,Control/Planning,20,0.02K,0.4KB/s
+vehicle/status/velocity_status,Critical,Control/Planning,20,0.02K,0.4KB/s
+system/emergency_holding,Critical,Control/Planning,10,0.01K,0.1KB/s
+system/emergency/control_cmd,Critical,Control/Planning,20,0.08K,1.6KB/s
+system/emergency/gear_cmd,Critical,Control/Planning,10,0.02K,0.2KB/s
+system/emergency/hazard_lights_cmd,Critical,Control/Planning,10,0.02K,0.2KB/s
+system/emergency/hazard_status,Critical,Control/Planning,10,10K,100KB/s
+system/fail_safe/mrm_state,Critical,Control/Planning,10,0.02K,0.2KB/s
+system/mrm/comfortable_stop/status,Critical,Control/Planning,10,0.02K,0.2KB/s
+system/mrm/emergency_stop/status,Critical,Control/Planning,20,0.02K,0.4KB/s
+system/operation_mode/availability,Critical,Control/Planning,10,0.02K,0.2KB/s
+system/operation_mode/state,Critical,Control/Planning,1,0.02K,0.02KB/s

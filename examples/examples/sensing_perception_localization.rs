@@ -49,7 +49,7 @@ fn main() {
     let session = zenoh::open(config).wait().unwrap();
 
     // ---------------------- Load and spawn publishers ----------------------
-    let mut ex_pub = ReaderBuilder::new().has_headers(false).from_path("config/INTER_sensing_perception_localization.csv").unwrap();
+    let mut ex_pub = ReaderBuilder::new().has_headers(false).from_path("config/INTER_sensing_carla_one_camera.csv").unwrap();
     for result in ex_pub.records() {
         let rec = result.unwrap();
         let topic_string = rec.get(0).unwrap().trim().to_string();
@@ -64,7 +64,7 @@ fn main() {
         let priority = match criticality {
             "Critical" => Priority::RealTime,
             "Sensor" => {
-                if topic_static == "sensing/camera/traffic_light/image_raw" {
+                if topic_static == "sensing/camera/main/image_raw" {
                     Priority::InteractiveHigh
                 } else {
                     let index = TCLA_ROTATE_INDEX.fetch_add(1, Ordering::Relaxed) % TCLA_PRIORITIES.len();
@@ -119,8 +119,8 @@ fn main() {
 
     // ---------------------- Load and spawn subscribers ----------------------
     let sub_files = vec![
-        "config/INTER_control_planning.csv",
-        "config/INTER_vehicle_system.csv"
+        "config/INTER_control_carla_one_camera.csv",
+        "config/INTER_vehicle_carla_one_camera.csv"
     ];
     let this_module = "Sensing/Perception/Localization";
 
