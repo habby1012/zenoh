@@ -579,7 +579,7 @@ impl Runtime {
         *locators = self.manager().get_locators();
         for locator in &*locators {
             tracing::info!("Zenoh can be reached at: {}", locator);
-            tracing::info!("success!!!!!!!!!!!!!!!!!", locator);
+            tracing::info!("success!!!!!!!!!!!!!!!!!");
         }
     }
 
