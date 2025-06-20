@@ -578,6 +578,7 @@ impl Runtime {
         let mut locators = self.state.locators.write().unwrap();
         *locators = self.manager().get_locators();
         for locator in &*locators {
+            123123123
             tracing::info!("Zenoh can be reached at: {}", locator);
             tracing::info!("success!!!!!!!!!!!!!!!!!");
         }
