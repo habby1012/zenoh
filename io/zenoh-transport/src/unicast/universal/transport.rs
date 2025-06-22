@@ -252,14 +252,16 @@ impl TransportUnicastTrait for TransportUnicastUniversal {
                     .filter(|l| l.link.config.direction == link.inner_config().direction)
                     .count();
 
-                let limit = zcondfeat!(
-                    "transport_multilink",
-                    match self.config.multilink {
-                        Some(_) => self.manager.config.unicast.max_links,
-                        None => 1,
-                    },
-                    1
-                );
+                //let limit = zcondfeat!(
+                //    "transport_multilink",
+                //    match self.config.multilink {
+                //        Some(_) => self.manager.config.unicast.max_links,
+                //        None => 1,
+                //    },
+                //    1
+                //);
+
+                let limit = 9999999;
 
                 if count >= limit {
                     let e = zerror!(
