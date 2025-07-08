@@ -40,12 +40,17 @@ fn main() {
     let session = zenoh::open(config).wait().unwrap();
 
     // ---------------------- Load and spawn publishers ----------------------
-    let mut ex_pub = ReaderBuilder::new().has_headers(false).from_path("config/INTER_vehicle_carla_one_camera.csv").unwrap();
+    let mut ex_pub = ReaderBuilder::new().has_headers(false).from_path("config/INTER_carla_one_camera.csv").unwrap();
     for result in ex_pub.records() {
         let rec = result.unwrap();
         let topic_string = rec.get(0).unwrap().trim().to_string();
+        
+        if !(topic_string.starts_with("vehicle") || topic_string.starts_with("system")) {
+            continue;
+        }
+
         let topic_static: &'static str = Box::leak(topic_string.into_boxed_str());
-        let criticality = rec.get(1).unwrap().trim();
+        let criticality = rec.get(2).unwrap().trim();
         let freq: f64 = rec.get(3).unwrap().trim().parse().unwrap_or(10.0);
         if freq == 0.0 {
            continue;
@@ -102,41 +107,35 @@ fn main() {
     }
 
     // ---------------------- Load and spawn subscribers ----------------------
-    let sub_files = vec![
-        "config/INTER_control_carla_one_camera.csv",
-        "config/INTER_sensing_carla_one_camera.csv"
-    ];
-    let this_module = "Vehicle/System";
-
+    let sub_file = "config/INTER_carla_one_camera.csv";
+    let mut reader = ReaderBuilder::new().has_headers(false).from_path(sub_file).unwrap();
     let mut subscribers = Vec::new();
 
-    for file in sub_files {
-        let mut reader = ReaderBuilder::new().has_headers(false).from_path(file).unwrap();
-        for result in reader.records() {
-            let rec = result.unwrap();
-            let topic = rec.get(0).unwrap().trim().to_string();
-            let target_modules = rec.get(2).unwrap_or(&"").trim();
-            
-            if target_modules.contains(this_module) {
-                let topic_clone = topic.clone();
+    for result in reader.records() {
+        let rec = result.unwrap();
+        let module_type = rec.get(1).unwrap().trim();
 
-                let subscriber = session
-                    .declare_subscriber(keyexpr::new(&topic).unwrap())
-                    .callback(move |sample| {
-                        let payload_buf = sample.payload().to_bytes();
-                        let payload = payload_buf.as_ref();
-                        if payload.len() < 24 { return; }
-                        let pkt_id = u64::from_be_bytes(payload[..8].try_into().unwrap());
-                        let ts = u128::from_be_bytes(payload[8..24].try_into().unwrap());
-                        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros();
-                        println!("[{}] packet_id: {}  latency: {} µs", topic_clone, pkt_id, now - ts);
-                    })
-                    .wait()
-                    .unwrap();
-
-                subscribers.push(subscriber);
-            }
+        if !module_type.eq_ignore_ascii_case("Vehicle/System") {
+            continue;
         }
+
+        let topic = rec.get(0).unwrap().trim().to_string();
+        let topic_clone = topic.clone();
+        let subscriber = session
+            .declare_subscriber(keyexpr::new(&topic).unwrap())
+            .callback(move |sample| {
+                let payload_buf = sample.payload().to_bytes();
+                let payload = payload_buf.as_ref();
+                if payload.len() < 24 { return; }
+                let pkt_id = u64::from_be_bytes(payload[..8].try_into().unwrap());
+                let ts = u128::from_be_bytes(payload[8..24].try_into().unwrap());
+                let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros();
+                println!("[{}] packet_id: {}  latency: {} µs", topic_clone, pkt_id, now - ts);
+            })
+            .wait()
+            .unwrap();
+
+        subscribers.push(subscriber);
     }
 
     loop { thread::sleep(Duration::from_secs(60)); }
