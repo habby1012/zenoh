@@ -142,7 +142,7 @@ pub(crate) struct TransportLinkUnicastTx {
 }
 
 impl TransportLinkUnicastTx {
-    pub(crate) async fn send_batch(&mut self, batch: &mut WBatch, priority: u8) -> ZResult<()> {
+    pub(crate) async fn send_batch(&mut self, batch: &mut WBatch) -> ZResult<()> {
         const ERR: &str = "Write error on link: ";
 
         // tracing::trace!("WBatch: {:?}", batch);
@@ -163,7 +163,7 @@ impl TransportLinkUnicastTx {
         // tracing::trace!("WBytes: {:02x?}", bytes);
 
         // Send the message on the link
-        self.inner.link.write_all_with_priority(bytes, priority).await?;
+        self.inner.link.write_all(bytes).await?;
 
         Ok(())
     }
@@ -171,13 +171,11 @@ impl TransportLinkUnicastTx {
     pub(crate) async fn send(&mut self, msg: &TransportMessage) -> ZResult<usize> {
         const ERR: &str = "Write error on link: ";
 
-        let priority = msg.get_priority();
-
         // Create the batch for serializing the message
         let mut batch = WBatch::new(self.inner.config.batch);
         batch.encode(msg).map_err(|_| zerror!("{ERR}{self}"))?;
         let len = batch.len() as usize;
-        self.send_batch(&mut batch, priority).await?;
+        self.send_batch(&mut batch).await?;
         Ok(len)
     }
 }
@@ -343,3 +341,4 @@ impl fmt::Display for LinkUnicastWithOpenAck {
         }
     }
 }
+

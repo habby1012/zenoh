@@ -158,13 +158,6 @@ impl TransportMessage {
             size: None,
         }
     }
-
-    pub fn get_priority(&self) -> u8 {
-        match &self.body {
-            TransportBody::Frame(frame) => frame.ext_qos.priority() as u8,
-            _ => 0,
-        }
-    }
 }
 
 impl From<TransportBody> for TransportMessage {
@@ -357,3 +350,4 @@ pub mod ext {
         }
     }
 }
+

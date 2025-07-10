@@ -203,22 +203,6 @@ impl LinkUnicastTrait for LinkUnicastTls {
         })
     }
 
-    async fn write_with_priority(&self, buffer: &[u8], _priority: u8) -> ZResult<usize> {
-        let _guard = zasynclock!(self.write_mtx);
-        self.get_mut_socket().write(buffer).await.map_err(|e| {
-            tracing::trace!("Write error on TLS link {}: {}", self, e);
-            zerror!(e).into()
-        })
-    }
-
-    async fn write_all_with_priority(&self, buffer: &[u8], _priority :u8) -> ZResult<()> {
-        let _guard = zasynclock!(self.write_mtx);
-        self.get_mut_socket().write_all(buffer).await.map_err(|e| {
-            tracing::trace!("Write error on TLS link {}: {}", self, e);
-            zerror!(e).into()
-        })
-    }
-
     async fn read(&self, buffer: &mut [u8]) -> ZResult<usize> {
         let _guard = zasynclock!(self.read_mtx);
         self.get_mut_socket().read(buffer).await.map_err(|e| {
@@ -652,3 +636,4 @@ impl From<TlsAuthId> for LinkAuthId {
             .build()
     }
 }
+

@@ -19,7 +19,7 @@ use std::{
 
 use async_trait::async_trait;
 use tokio::sync::{Mutex as AsyncMutex, MutexGuard as AsyncMutexGuard};
-use zenoh_core::{zasynclock, zcondfeat, zread, zwrite};
+use zenoh_core::{zasynclock, zread, zwrite};
 use zenoh_link::Link;
 use zenoh_protocol::{
     core::{Priority, WhatAmI, ZenohIdProto},
@@ -411,3 +411,4 @@ impl TransportUnicastTrait for TransportUnicastUniversal {
         s.field("sn_resolution", &self.config.sn_resolution)
     }
 }
+

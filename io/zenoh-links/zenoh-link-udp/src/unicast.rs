@@ -34,10 +34,6 @@ use zenoh_protocol::{
 use zenoh_result::{bail, zerror, Error as ZError, ZResult};
 use zenoh_sync::Mvar;
 
-use nix::sys::socket::sockopt::Priority as SocketPriority;
-use nix::sys::socket::setsockopt;
-use std::os::unix::io::AsRawFd;
-
 use super::{
     get_udp_addrs, socket_addr_to_udp_locator, UDP_ACCEPT_THROTTLE_TIME, UDP_DEFAULT_MTU,
     UDP_MAX_MTU,
@@ -64,20 +60,6 @@ impl LinkUnicastUdpConnected {
             .send(buffer)
             .await
             .map_err(|e| zerror!(e).into())
-    }
-
-    async fn write_with_priority(&self, buffer: &[u8], priority: u8) -> ZResult<usize> {
-        let fd = self.socket.as_raw_fd();
-        let priority_i32 = priority as i32;
-
-        // Convert Zenoh priority (1 = highest) to Linux SO_PRIORITY (higher = higher priority).
-        // This ensures Zenoh priority 1 maps to SO_PRIORITY 6 (highest), 7 maps to 0 (lowest).
-        let so_priority = 7 - priority_i32;
-
-        if let Err(e) = setsockopt(fd, SocketPriority, &so_priority) {
-            tracing::warn!("Failed to set TCP SO_PRIORITY: {}", e);
-        }
-        self.socket.send(buffer).await.map_err(|e| zerror!(e).into())
     }
 
     async fn close(&self) -> ZResult<()> {
@@ -127,28 +109,6 @@ impl LinkUnicastUdpUnconnected {
                 .send_to(buffer, &dst_addr)
                 .await
                 .map_err(|e| zerror!(e).into()),
-            None => bail!("UDP listener has been dropped"),
-        }
-    }
-
-    async fn write_with_priority(&self, buffer: &[u8], dst_addr: SocketAddr, priority: u8) -> ZResult<usize> {
-        match self.socket.upgrade() {
-            Some(socket) => {
-                let fd = socket.as_raw_fd();
-                let priority_i32 = priority as i32;
-
-                // Convert Zenoh priority (1 = highest) to Linux SO_PRIORITY (higher = higher priority).
-                // This ensures Zenoh priority 1 maps to SO_PRIORITY 6 (highest), 7 maps to 0 (lowest).
-                let so_priority = 7 - priority_i32;
-
-                if let Err(e) = setsockopt(fd, SocketPriority, &so_priority) {
-                    tracing::warn!("Failed to set TCP SO_PRIORITY: {}", e);
-                }
-                socket
-                    .send_to(buffer, &dst_addr)
-                    .await
-                    .map_err(|e| zerror!(e).into())
-            }
             None => bail!("UDP listener has been dropped"),
         }
     }
@@ -215,21 +175,6 @@ impl LinkUnicastTrait for LinkUnicastUdp {
         let mut written: usize = 0;
         while written < buffer.len() {
             written += self.write(&buffer[written..]).await?;
-        }
-        Ok(())
-    }
-
-    async fn write_with_priority(&self, buffer: &[u8], priority: u8) -> ZResult<usize> {
-        match &self.variant {
-            LinkUnicastUdpVariant::Connected(link) => link.write_with_priority(buffer, priority).await,
-            LinkUnicastUdpVariant::Unconnected(link) => link.write_with_priority(buffer, self.dst_addr, priority).await,
-        }
-    }
-
-    async fn write_all_with_priority(&self, buffer: &[u8], priority: u8) -> ZResult<()> {
-        let mut written: usize = 0;
-        while written < buffer.len() {
-            written += self.write_with_priority(&buffer[written..], priority).await?;
         }
         Ok(())
     }
@@ -636,3 +581,4 @@ async fn accept_read_task(
 
     Ok(())
 }
+
