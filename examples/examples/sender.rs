@@ -15,7 +15,7 @@ fn main() {
 
     // Publisher 1: user-specified priority
     let pub1 = session
-        .declare_publisher("data1")
+        .declare_publisher("UserDefined/test/data1")
         .congestion_control(CongestionControl::Block)
         .priority(user_priority)
         .express(express)
@@ -24,7 +24,7 @@ fn main() {
 
     // Publisher 2: priority 3
     let pub2 = session
-        .declare_publisher("data2")
+        .declare_publisher("InteractiveLow/test/data2")
         .congestion_control(CongestionControl::Block)
         .priority(Priority::InteractiveLow)
         .express(express)
@@ -33,7 +33,7 @@ fn main() {
 
     // Publisher 3: priority 5
     let pub3 = session
-        .declare_publisher("data3")
+        .declare_publisher("Data/test/data3")
         .congestion_control(CongestionControl::Block)
         .priority(Priority::Data)
         .express(express)

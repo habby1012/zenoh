@@ -110,6 +110,7 @@ zenoh-runtime = { workspace = true }
 zenoh-task = { workspace = true }
 once_cell = { workspace = true }
 derive_more.workspace = true
+csv = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

@@ -12,9 +12,9 @@ fn main() {
 
     // Subscribe to "data1"
     let _sub_data1 = session
-        .declare_subscriber("data1")
+        .declare_subscriber("UserDefined/test/data1")
         .callback(|sample| {
-            handle_sample("data1", sample.payload().to_bytes());
+            handle_sample("UserDefined/test/data1", sample.payload().to_bytes());
         })
         .background()
         .wait()
@@ -22,9 +22,9 @@ fn main() {
 
     // Subscribe to "data2"
     let _sub_data2 = session
-        .declare_subscriber("data2")
+        .declare_subscriber("InteractiveLow/test/data2")
         .callback(|sample| {
-            handle_sample("data2", sample.payload().to_bytes());
+            handle_sample("InteractiveLow/test/data2", sample.payload().to_bytes());
         })
         .background()
         .wait()
@@ -32,9 +32,9 @@ fn main() {
 
     // Subscribe to "data3"
     let _sub_data3 = session
-        .declare_subscriber("data3")
+        .declare_subscriber("Data/test/data3")
         .callback(|sample| {
-            handle_sample("data3", sample.payload().to_bytes());
+            handle_sample("Data/test/data3", sample.payload().to_bytes());
         })
         .background()
         .wait()

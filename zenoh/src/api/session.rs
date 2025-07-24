@@ -1221,6 +1221,31 @@ impl Session {
     }
 }
 
+use once_cell::sync::OnceCell;
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct TopicInfo {
+    pub topic: String,
+    pub module: String,
+    pub class: String,
+    pub priority: u32,
+    pub size: String,
+    pub bandwidth: String,
+}
+
+pub static TOPIC_TABLE: OnceCell<Vec<TopicInfo>> = OnceCell::new();
+
+fn read_topic_table(path: &str) -> Vec<TopicInfo> {
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .from_path(path)
+        .expect("Cannot open CSV");
+    rdr.deserialize()
+        .map(|res| res.expect("CSV parse error"))
+        .collect()
+}
+
 impl Session {
     #[allow(clippy::new_ret_no_self)]
     pub(super) fn new(
@@ -1228,6 +1253,10 @@ impl Session {
         #[cfg(feature = "shared-memory")] shm_clients: Option<Arc<ShmClientStorage>>,
     ) -> impl Resolve<ZResult<Session>> {
         ResolveFuture::new(async move {
+            TOPIC_TABLE.get_or_init(|| {
+                read_topic_table("/home/newslab/repos/thesis/src/subscriber/subscriber/config/INTER_carla_one_camera.csv")
+            });
+
             tracing::debug!("Config: {:?}", &config);
             let aggregated_subscribers = config.0.aggregation().subscribers().clone();
             let aggregated_publishers = config.0.aggregation().publishers().clone();

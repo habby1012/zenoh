@@ -18,7 +18,7 @@ use std::sync::Arc;
 
 use zenoh_core::zread;
 use zenoh_protocol::{
-    core::{key_expr::keyexpr, Reliability, WireExpr},
+    core::{key_expr::keyexpr, Priority, Reliability, WireExpr},
     network::{declare::SubscriberId, push::ext, Push},
     zenoh::PushBody,
 };
@@ -35,6 +35,7 @@ use crate::net::routing::{
     hat::{HatTrait, SendDeclare},
     router::get_or_set_route,
 };
+use crate::api::session::TOPIC_TABLE;
 
 #[derive(Copy, Clone)]
 pub(crate) struct SubscriberInfo;
@@ -300,6 +301,18 @@ pub fn route_data(
         .cloned()
     {
         Some(prefix) => {
+            let flow_name = format!("{}{}", prefix.expr(), wire_expr.suffix.as_ref());
+            
+            if let Some(table) = TOPIC_TABLE.get() {
+                for info in table {
+                    if info.topic == flow_name {
+                        println!("Match: {:?}", info);
+                    }
+                }
+            } else {
+                println!("TOPIC_TABLE not initialized");
+            }
+
             tracing::trace!(
                 "{} Route data for res {}{}",
                 face,
@@ -325,6 +338,10 @@ pub fn route_data(
                 let route = get_data_route(&tables, face, &res, &mut expr, ext_nodeid.node_id);
 
                 if !route.is_empty() {
+                    let new_priority = Priority::RealTime;
+                    let mut new_qos = ext_qos;
+                    new_qos.set_priority(new_priority.into());
+
                     #[cfg(not(feature = "stats"))]
                     let mut payload = payload();
                     treat_timestamp!(&tables.hlc, payload, tables.drop_future_timestamp);
@@ -346,7 +363,7 @@ pub fn route_data(
                             outface.primitives.send_push(
                                 Push {
                                     wire_expr: key_expr.into(),
-                                    ext_qos,
+                                    ext_qos: new_qos,
                                     ext_tstamp,
                                     ext_nodeid: ext::NodeIdType { node_id: *context },
                                     payload,
@@ -377,7 +394,7 @@ pub fn route_data(
                             outface.primitives.send_push(
                                 Push {
                                     wire_expr: key_expr,
-                                    ext_qos,
+                                    ext_qos: new_qos,
                                     ext_tstamp: None,
                                     ext_nodeid: ext::NodeIdType { node_id: context },
                                     payload: payload.clone(),
