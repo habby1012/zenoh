@@ -1234,15 +1234,18 @@ pub struct TopicInfo {
     pub bandwidth: String,
 }
 
-pub static TOPIC_TABLE: OnceCell<Vec<TopicInfo>> = OnceCell::new();
+pub static TOPIC_TABLE: OnceCell<HashMap<String, TopicInfo>> = OnceCell::new();
 
-fn read_topic_table(path: &str) -> Vec<TopicInfo> {
+fn read_topic_table(path: &str) -> HashMap<String, TopicInfo> {
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
         .from_path(path)
         .expect("Cannot open CSV");
     rdr.deserialize()
-        .map(|res| res.expect("CSV parse error"))
+        .map(|res| {
+            let info: TopicInfo = res.expect("CSV parse error");
+            (info.topic.clone(), info)
+        })
         .collect()
 }
 

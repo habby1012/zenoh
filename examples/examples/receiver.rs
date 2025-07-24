@@ -12,9 +12,9 @@ fn main() {
 
     // Subscribe to "data1"
     let _sub_data1 = session
-        .declare_subscriber("UserDefined/test/data1")
+        .declare_subscriber("system/emergency/hazard_status")
         .callback(|sample| {
-            handle_sample("UserDefined/test/data1", sample.payload().to_bytes());
+            handle_sample("system/emergency/hazard_status", sample.payload().to_bytes());
         })
         .background()
         .wait()

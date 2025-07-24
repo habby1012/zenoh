@@ -304,13 +304,9 @@ pub fn route_data(
             let flow_name = format!("{}{}", prefix.expr(), wire_expr.suffix.as_ref());
             
             if let Some(table) = TOPIC_TABLE.get() {
-                for info in table {
-                    if info.topic == flow_name {
-                        println!("Match: {:?}", info);
-                    }
+                if let Some(info) = table.get(&flow_name) {
+                   tracing::debug!("Match: {:?}", info);
                 }
-            } else {
-                println!("TOPIC_TABLE not initialized");
             }
 
             tracing::trace!(

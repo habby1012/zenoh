@@ -15,7 +15,7 @@ fn main() {
 
     // Publisher 1: user-specified priority
     let pub1 = session
-        .declare_publisher("UserDefined/test/data1")
+        .declare_publisher("system/emergency/hazard_status")
         .congestion_control(CongestionControl::Block)
         .priority(user_priority)
         .express(express)
