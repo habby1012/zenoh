@@ -277,6 +277,15 @@ macro_rules! inc_stats {
     };
 }
 
+fn extract_ros_topic(zenoh_key: &str) -> Option<String> {
+    let parts: Vec<&str> = zenoh_key.split('/').collect();
+    if parts.len() < 4 {
+        return None;
+    }
+    let topic_path = &parts[1..parts.len()-2];
+    Some(topic_path.join("/"))
+}
+
 // having all the arguments instead of an intermediate struct seems to enable a better inlining
 // see https://github.com/eclipse-zenoh/zenoh/pull/1713#issuecomment-2590130026
 #[allow(clippy::too_many_arguments)]
@@ -303,11 +312,21 @@ pub fn route_data(
         Some(prefix) => {
             let flow_name = format!("{}{}", prefix.expr(), wire_expr.suffix.as_ref());
             
+            // rmw_zenoh
             if let Some(table) = TOPIC_TABLE.get() {
-                if let Some(info) = table.get(&flow_name) {
-                   tracing::debug!("Match: {:?}", info);
+                if let Some(topic_name) = extract_ros_topic(&flow_name) {
+                    if let Some(info) = table.get(&topic_name) {
+                        tracing::debug!("Match: {:?}", info);
+                    }
                 }
             }
+
+            // test
+            //if let Some(table) = TOPIC_TABLE.get() {
+            //    if let Some(info) = table.get(&flow_name) {
+            //        tracing::debug!("Match: {:?}", info);
+            //    }
+            //}
 
             tracing::trace!(
                 "{} Route data for res {}{}",
