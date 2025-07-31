@@ -310,6 +310,10 @@ pub fn route_data(
         .cloned()
     {
         Some(prefix) => {
+            let new_priority = Priority::RealTime;
+            let mut new_qos = ext_qos;
+            new_qos.set_priority(new_priority.into());
+            
             let flow_name = format!("{}{}", prefix.expr(), wire_expr.suffix.as_ref());
             
             // rmw_zenoh
@@ -353,10 +357,6 @@ pub fn route_data(
                 let route = get_data_route(&tables, face, &res, &mut expr, ext_nodeid.node_id);
 
                 if !route.is_empty() {
-                    let new_priority = Priority::RealTime;
-                    let mut new_qos = ext_qos;
-                    new_qos.set_priority(new_priority.into());
-
                     #[cfg(not(feature = "stats"))]
                     let mut payload = payload();
                     treat_timestamp!(&tables.hlc, payload, tables.drop_future_timestamp);
