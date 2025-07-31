@@ -2096,20 +2096,6 @@ impl SessionInner {
         #[cfg(feature = "unstable")] reliability: Reliability,
         attachment: Option<ZBytes>,
     ) {
-
-        if let Some(ref data_info) = info {
-            if let Some(sent_ts) = &data_info.timestamp {
-                let now = self.runtime.new_timestamp().unwrap();
-                let duration = now.get_diff_duration(sent_ts);
-                tracing::debug!(
-                    "[Zenoh] latency: {} ns (publisher: {:?}, now: {:?})",
-                    duration.as_nanos(),
-                    sent_ts,
-                    now
-                );
-            }
-        }
-
         let mut callbacks = SingleOrVec::default();
         let state = zread!(self.state);
         if state.primitives.is_none() {
