@@ -310,17 +310,23 @@ pub fn route_data(
         .cloned()
     {
         Some(prefix) => {
-            let new_priority = Priority::RealTime;
-            let mut new_qos = ext_qos;
-            new_qos.set_priority(new_priority.into());
-            
             let flow_name = format!("{}{}", prefix.expr(), wire_expr.suffix.as_ref());
-            
+           
+            let mut new_qos = ext_qos;
             // rmw_zenoh
             if let Some(table) = TOPIC_TABLE.get() {
                 if let Some(topic_name) = extract_ros_topic(&flow_name) {
                     if let Some(info) = table.get(&topic_name) {
                         tracing::debug!("Match: {:?}", info);
+                        
+                        let new_priority = match info.class.as_str() {
+                            "Critical" => Priority::RealTime,
+                            "Sensor" => Priority::InteractiveHigh,
+                            "Less-Critical" => Priority::InteractiveLow,
+                            _ => Priority::Data,
+                        };
+
+                        new_qos.set_priority(new_priority.into());
                     }
                 }
             }
@@ -329,6 +335,15 @@ pub fn route_data(
             //if let Some(table) = TOPIC_TABLE.get() {
             //    if let Some(info) = table.get(&flow_name) {
             //        tracing::debug!("Match: {:?}", info);
+                
+            //        let new_priority = match info.class.as_str() {
+            //            "Critical" => Priority::RealTime,
+            //            "Sensor" => Priority::InteractiveHigh,
+            //            "Less-Critical" => Priority::InteractiveLow,
+            //             _ => Priority::Data,
+            //        };
+
+            //        new_qos.set_priority(new_priority.into());
             //    }
             //}
 
