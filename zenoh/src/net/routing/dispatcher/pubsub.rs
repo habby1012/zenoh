@@ -321,8 +321,9 @@ pub fn route_data(
                         
                         let new_priority = match info.class.as_str() {
                             "Critical" => Priority::RealTime,
-                            "Sensor" => Priority::InteractiveHigh,
-                            "Less-Critical" => Priority::InteractiveLow,
+                            "Soft Real-Time" => Priority::InteractiveHigh,
+                            "Perception" => Priority::InteractiveLow,
+                            "Best-Effort" => Priority::DataHigh,
                             _ => Priority::Data,
                         };
 
