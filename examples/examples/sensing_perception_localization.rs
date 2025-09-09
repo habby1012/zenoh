@@ -49,7 +49,7 @@ fn main() {
     let session = zenoh::open(config).wait().unwrap();
 
     // ---------------------- Load and spawn publishers ----------------------
-    let mut ex_pub = ReaderBuilder::new().has_headers(false).from_path("config/INTER_carla_one_camera.csv").unwrap();
+    let mut ex_pub = ReaderBuilder::new().has_headers(false).from_path("config/metadata_table.csv").unwrap();
     for result in ex_pub.records() {
         let rec = result.unwrap();
         let topic_string = rec.get(0).unwrap().trim().to_string();
@@ -123,7 +123,7 @@ fn main() {
     }
 
     // ---------------------- Load and spawn subscribers ----------------------
-    let sub_file = "config/INTER_carla_one_camera.csv";
+    let sub_file = "config/metadata_table.csv";
     let mut reader = ReaderBuilder::new().has_headers(false).from_path(sub_file).unwrap();
     let mut subscribers = Vec::new();
 

@@ -1257,7 +1257,7 @@ impl Session {
     ) -> impl Resolve<ZResult<Session>> {
         ResolveFuture::new(async move {
             TOPIC_TABLE.get_or_init(|| {
-                read_topic_table("/home/newslab/repos/thesis/src/subscriber/subscriber/config/INTER_carla_one_camera.csv")
+                read_topic_table("/home/newslab/repos/thesis/src/subscriber/subscriber/config/metadata_table.csv")
             });
 
             tracing::debug!("Config: {:?}", &config);
