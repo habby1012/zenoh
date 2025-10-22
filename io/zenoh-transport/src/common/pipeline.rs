@@ -305,7 +305,7 @@ impl StageIn {
 
         macro_rules! zretok {
             ($batch:expr, $msg:expr) => {{
-                if !self.batching || $msg.is_express() {
+                if !self.batching || $msg.is_express() || priority == Priority::RealTime {
                     // Move out existing batch
                     self.s_out.move_batch($batch);
                     return Ok(true);
