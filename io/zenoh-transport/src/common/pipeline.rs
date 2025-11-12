@@ -33,7 +33,7 @@ use zenoh_config::{QueueAllocConf, QueueAllocMode, QueueSizeConf};
 use zenoh_core::zlock;
 use zenoh_protocol::{
     core::Priority,
-    network::NetworkMessage,
+    network::{NetworkMessage, NetworkBody},
     transport::{
         fragment,
         fragment::FragmentHeader,
@@ -808,6 +808,25 @@ impl TransmissionPipelineProducer {
             (0, Priority::DEFAULT)
         };
 
+        if let NetworkBody::Push(ref p) = msg.body {
+            if priority == Priority::RealTime || priority == Priority::InteractiveHigh {
+                let prio_id = match priority {
+                    Priority::RealTime => 1,
+                    Priority::InteractiveHigh => 2,
+                    _ => 0,
+                };
+
+                let now = LOCAL_EPOCH.elapsed().as_micros() as u64;
+                tracing::debug!(
+                    target: "zenoh_transport::common::pipeline",
+                    "RT_ARR prio={} scope={} time={}us",
+                    prio_id,
+                    p.wire_expr.scope,
+                    now,
+                );
+            }
+        }
+
         // If message is droppable, compute a deadline after which the sample could be dropped
         let (wait_time, max_wait_time) = if msg.is_droppable() {
             // Checked if we are blocked on the priority queue and we drop directly the message
@@ -1367,3 +1386,4 @@ mod tests {
         Ok(())
     }
 }
+
