@@ -18,7 +18,7 @@ use std::{
         atomic::{AtomicBool, AtomicU32, AtomicU8, Ordering},
         Arc, Mutex, MutexGuard,
     },
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 use crossbeam_utils::CachePadded;
@@ -816,13 +816,16 @@ impl TransmissionPipelineProducer {
                     _ => 0,
                 };
 
-                let now = LOCAL_EPOCH.elapsed().as_micros() as u64;
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or(Duration::ZERO)
+                    .as_micros() as u64;
+                
                 tracing::warn!(
                     target: "zenoh_transport::common::pipeline",
-                    "RT_ARR prio={} scope={} nodeid={:?} time={}us",
+                    "RT_ARR prio={} scope={} time={}us",
                     prio_id,
                     p.wire_expr.scope,
-                    p.ext_nodeid,
                     now,
                 );
             }
