@@ -819,9 +819,10 @@ impl TransmissionPipelineProducer {
                 let now = LOCAL_EPOCH.elapsed().as_micros() as u64;
                 tracing::warn!(
                     target: "zenoh_transport::common::pipeline",
-                    "RT_ARR prio={} scope={} time={}us",
+                    "RT_ARR prio={} scope={} nodeid={:?} time={}us",
                     prio_id,
                     p.wire_expr.scope,
+                    p.ext_nodeid,
                     now,
                 );
             }
