@@ -808,7 +808,7 @@ impl TransmissionPipelineProducer {
             (0, Priority::DEFAULT)
         };
 
-        if let NetworkBody::Push(ref p) = msg.body {
+        /*if let NetworkBody::Push(ref p) = msg.body {
             if priority == Priority::RealTime || priority == Priority::InteractiveHigh {
                 let prio_id = match priority {
                     Priority::RealTime => 1,
@@ -825,6 +825,22 @@ impl TransmissionPipelineProducer {
                     target: "zenoh_transport::common::pipeline",
                     "RT_ARR prio={} scope={} time={}us",
                     prio_id,
+                    p.wire_expr.scope,
+                    now,
+                );
+            }
+        }*/
+
+        if let NetworkBody::Push(ref p) = msg.body {
+            if priority == Priority::RealTime {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or(Duration::ZERO)
+                    .as_micros() as u64;
+
+                tracing::warn!(
+                    target: "zenoh_transport::common::pipeline",
+                    "RT_ARR prio=1 scope={} time={}us",
                     p.wire_expr.scope,
                     now,
                 );
