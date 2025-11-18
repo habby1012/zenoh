@@ -37,6 +37,7 @@ use crate::net::routing::{
 };
 use crate::api::session::TOPIC_TABLE;
 use zenoh_buffers::buffer::SplitBuffer;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Copy, Clone)]
 pub(crate) struct SubscriberInfo;
@@ -337,25 +338,35 @@ pub fn route_data(
             let mut p = payload();
             if let PushBody::Put(ref data) = p {
                 if let Some(att) = data.ext_attachment.as_ref() {
-                    // print all slices
-                    for (i, s) in att.buffer.slices().enumerate() {
-                      tracing::warn!(
-                            "[ATT] topic={} slice={} len={} raw={:02x?}",
-                            flow_name, i, s.len(), s
-                        );
-                    }
+                    if let Some(b) = att.buffer.slices().next() {
+                        // find "source_timestamp"
+                        if let Some(pos) = b
+                            .windows(b"source_timestamp".len())
+                            .position(|w| w == b"source_timestamp")
+                        {
+                            let ts_pos = pos + "source_timestamp".len();
+                            if ts_pos + 8 <= b.len() {
+                                let ts_ns =
+                                    u64::from_le_bytes(b[ts_pos..ts_pos + 8].try_into().unwrap());
+                                let now = SystemTime::now()
+                                    .duration_since(UNIX_EPOCH)
+                                    .unwrap_or_default();
+                                let now_ns: u128 =
+                                    now.as_secs() as u128 * 1_000_000_000u128
+                                    + now.subsec_nanos() as u128;
+                                let diff_ns = now_ns.saturating_sub(ts_ns as u128);
 
-                    // merge into one Vec<u8>
-                    let mut merged: Vec<u8> = Vec::new();
-                    for s in att.buffer.slices() {
-                        merged.extend_from_slice(s);
+                                tracing::warn!(
+                                    "[ATT] topic={} ts={} now={} diff_ns={} (~{:.3} ms)",
+                                    flow_name,
+                                    ts_ns,
+                                    now_ns,
+                                    diff_ns,
+                                    diff_ns as f64 / 1_000_000.0,
+                                );
+                            }
+                        }
                     }
-
-                    tracing::warn!(
-                        "[ATT] merged_len={} merged_raw={:02x?}",
-                        merged.len(),
-                        merged
-                    );
                 }
             }
 
