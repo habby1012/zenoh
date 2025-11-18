@@ -18,7 +18,7 @@ use std::{
         atomic::{AtomicBool, AtomicU32, AtomicU8, Ordering},
         Arc, Mutex, MutexGuard,
     },
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant},
 };
 
 use crossbeam_utils::CachePadded;
@@ -33,7 +33,7 @@ use zenoh_config::{QueueAllocConf, QueueAllocMode, QueueSizeConf};
 use zenoh_core::zlock;
 use zenoh_protocol::{
     core::Priority,
-    network::{NetworkMessage, NetworkBody},
+    network::{NetworkMessage},
     transport::{
         fragment,
         fragment::FragmentHeader,
@@ -831,7 +831,7 @@ impl TransmissionPipelineProducer {
             }
         }*/
 
-        if let NetworkBody::Push(ref p) = msg.body {
+        /*if let NetworkBody::Push(ref p) = msg.body {
             if priority == Priority::RealTime {
                 let now = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -845,7 +845,7 @@ impl TransmissionPipelineProducer {
                     now,
                 );
             }
-        }
+        }*/
 
         // If message is droppable, compute a deadline after which the sample could be dropped
         let (wait_time, max_wait_time) = if msg.is_droppable() {

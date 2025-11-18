@@ -36,6 +36,7 @@ use crate::net::routing::{
     router::get_or_set_route,
 };
 use crate::api::session::TOPIC_TABLE;
+use zenoh_buffers::buffer::SplitBuffer;
 
 #[derive(Copy, Clone)]
 pub(crate) struct SubscriberInfo;
@@ -332,6 +333,32 @@ pub fn route_data(
                 }
             }
 
+            // ==== PRINT ATTACHMENT HERE ====
+            let mut p = payload();
+            if let PushBody::Put(ref data) = p {
+                if let Some(att) = data.ext_attachment.as_ref() {
+                    // print all slices
+                    for (i, s) in att.buffer.slices().enumerate() {
+                      tracing::warn!(
+                            "[ATT] topic={} slice={} len={} raw={:02x?}",
+                            flow_name, i, s.len(), s
+                        );
+                    }
+
+                    // merge into one Vec<u8>
+                    let mut merged: Vec<u8> = Vec::new();
+                    for s in att.buffer.slices() {
+                        merged.extend_from_slice(s);
+                    }
+
+                    tracing::warn!(
+                        "[ATT] merged_len={} merged_raw={:02x?}",
+                        merged.len(),
+                        merged
+                    );
+                }
+            }
+
             // test
             //if let Some(table) = TOPIC_TABLE.get() {
             //    if let Some(info) = table.get(&flow_name) {
@@ -374,7 +401,7 @@ pub fn route_data(
 
                 if !route.is_empty() {
                     #[cfg(not(feature = "stats"))]
-                    let mut payload = payload();
+                    let mut payload = p.clone();
                     treat_timestamp!(&tables.hlc, payload, tables.drop_future_timestamp);
 
                     if route.len() == 1 {
