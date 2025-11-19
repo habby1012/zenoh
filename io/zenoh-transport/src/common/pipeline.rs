@@ -18,7 +18,7 @@ use std::{
         atomic::{AtomicBool, AtomicU32, AtomicU8, Ordering},
         Arc, Mutex, MutexGuard,
     },
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 use crossbeam_utils::CachePadded;
@@ -26,6 +26,7 @@ use ringbuffer_spsc::{RingBuffer, RingBufferReader, RingBufferWriter};
 use zenoh_buffers::{
     reader::{HasReader, Reader},
     writer::HasWriter,
+    buffer::SplitBuffer,
     ZBuf,
 };
 use zenoh_codec::{transport::batch::BatchError, WCodec, Zenoh080};
@@ -33,13 +34,14 @@ use zenoh_config::{QueueAllocConf, QueueAllocMode, QueueSizeConf};
 use zenoh_core::zlock;
 use zenoh_protocol::{
     core::Priority,
-    network::{NetworkMessage},
+    network::{NetworkMessage, NetworkBody},
     transport::{
         fragment,
         fragment::FragmentHeader,
         frame::{self, FrameHeader},
         AtomicBatchSize, BatchSize, TransportMessage,
     },
+    zenoh::PushBody,
 };
 use zenoh_sync::{event, Notifier, WaitDeadlineError, Waiter};
 
@@ -808,44 +810,45 @@ impl TransmissionPipelineProducer {
             (0, Priority::DEFAULT)
         };
 
-        /*if let NetworkBody::Push(ref p) = msg.body {
-            if priority == Priority::RealTime || priority == Priority::InteractiveHigh {
-                let prio_id = match priority {
-                    Priority::RealTime => 1,
-                    Priority::InteractiveHigh => 2,
-                    _ => 0,
-                };
+        // ==== PRINT TIMESTAMP IN TX PIPELINE ====
+        if let NetworkBody::Push(ref p) = msg.body {
+            let flow_name = format!("{}{}", p.wire_expr.scope, p.wire_expr.suffix.as_ref());
 
-                let now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or(Duration::ZERO)
-                    .as_micros() as u64;
-                
-                tracing::warn!(
-                    target: "zenoh_transport::common::pipeline",
-                    "RT_ARR prio={} scope={} time={}us",
-                    prio_id,
-                    p.wire_expr.scope,
-                    now,
-                );
+            if let PushBody::Put(ref data) = p.payload {
+                if let Some(att) = data.ext_attachment.as_ref() {
+                    if let Some(b) = att.buffer.slices().next() {
+                        if let Some(pos) = b
+                            .windows(b"source_timestamp".len())
+                            .position(|w| w == b"source_timestamp")
+                        {
+                            let ts_pos = pos + "source_timestamp".len();
+                            if ts_pos + 8 <= b.len() {
+                                let ts_ns =
+                                    u64::from_le_bytes(b[ts_pos..ts_pos + 8].try_into().unwrap());
+                                let now = SystemTime::now()
+                                    .duration_since(UNIX_EPOCH)
+                                    .unwrap_or_default();
+                                let now_ns: u128 =
+                                    now.as_secs() as u128 * 1_000_000_000u128
+                                    + now.subsec_nanos() as u128;
+                                let diff_ns = now_ns.saturating_sub(ts_ns as u128);
+
+                                tracing::warn!(
+                                    "[ATT-TX] topic={} prio={:?} ts={} now={} diff_ns={} (~{:.3} ms)",
+                                    flow_name,
+                                    priority,
+                                    ts_ns,
+                                    now_ns,
+                                    diff_ns,
+                                    diff_ns as f64 / 1_000_000.0,
+                                );
+                            }
+                        }
+                    }
+                }
             }
-        }*/
-
-        /*if let NetworkBody::Push(ref p) = msg.body {
-            if priority == Priority::RealTime {
-                let now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or(Duration::ZERO)
-                    .as_micros() as u64;
-
-                tracing::warn!(
-                    target: "zenoh_transport::common::pipeline",
-                    "RT_ARR prio=1 scope={} time={}us",
-                    p.wire_expr.scope,
-                    now,
-                );
-            }
-        }*/
+        }
+        // ==== END PRINT TIMESTAMP IN TX PIPELINE ====
 
         // If message is droppable, compute a deadline after which the sample could be dropped
         let (wait_time, max_wait_time) = if msg.is_droppable() {

@@ -334,7 +334,7 @@ pub fn route_data(
                 }
             }
 
-            // ==== PRINT ATTACHMENT HERE ====
+            // ==== PRINT TIMESTAMP HERE ====
             let mut p = payload();
             if let PushBody::Put(ref data) = p {
                 if let Some(att) = data.ext_attachment.as_ref() {
@@ -357,7 +357,7 @@ pub fn route_data(
                                 let diff_ns = now_ns.saturating_sub(ts_ns as u128);
 
                                 tracing::warn!(
-                                    "[ATT] topic={} ts={} now={} diff_ns={} (~{:.3} ms)",
+                                    "[ATT-ROUTE] topic={} ts={} now={} diff_ns={} (~{:.3} ms)",
                                     flow_name,
                                     ts_ns,
                                     now_ns,
