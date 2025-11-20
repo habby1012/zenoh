@@ -24,12 +24,12 @@ use std::{
 use crossbeam_utils::CachePadded;
 use ringbuffer_spsc::{RingBuffer, RingBufferReader, RingBufferWriter};
 use zenoh_buffers::{
-    reader::{HasReader, Reader},
+    reader::{HasReader, Reader, DidntRead},
     writer::HasWriter,
     buffer::SplitBuffer,
     ZBuf,
 };
-use zenoh_codec::{transport::batch::BatchError, WCodec, Zenoh080};
+use zenoh_codec::{transport::batch::BatchError, WCodec, RCodec, Zenoh080};
 use zenoh_config::{QueueAllocConf, QueueAllocMode, QueueSizeConf};
 use zenoh_core::zlock;
 use zenoh_protocol::{
@@ -39,7 +39,7 @@ use zenoh_protocol::{
         fragment,
         fragment::FragmentHeader,
         frame::{self, FrameHeader},
-        AtomicBatchSize, BatchSize, TransportMessage,
+        AtomicBatchSize, BatchSize, TransportMessage, TransportBody,
     },
     zenoh::PushBody,
 };
@@ -936,6 +936,89 @@ impl TransmissionPipelineConsumer {
                 match queue.try_pull() {
                     Pull::Some(batch) => {
                         let prio = Priority::try_from(prio as u8).unwrap();
+
+                        // ==== PRINT TIMESTAMP IN RX PIPELINE ====
+                        {
+                            let bytes = batch.as_slice();
+                            let mut reader = bytes.reader();
+                            let codec = Zenoh080::new();
+
+                            loop {
+                                // 注意：這裡不要用 turbofish，型別用右邊的 Result 來指定
+                                let res: Result<TransportMessage, DidntRead> = codec.read(&mut reader);
+                                match res {
+                                    Ok(tmsg) => {
+                                        if let TransportBody::Frame(frame) = tmsg.body {
+                                            // frame.payload 裡面是 NetworkMessage
+                                            for nmsg in frame.payload.iter() {
+                                                if let NetworkBody::Push(ref p) = nmsg.body {
+                                                    let flow_name = format!(
+                                                        "{}{}",
+                                                        p.wire_expr.scope,
+                                                        p.wire_expr.suffix.as_ref()
+                                                    );
+
+                                                    if let PushBody::Put(ref data) = p.payload {
+                                                        if let Some(att) = data.ext_attachment.as_ref() {
+                                                            if let Some(b) = att.buffer.slices().next() {
+                                                                if let Some(pos) = b
+                                                                    .windows(
+                                                                        b"source_timestamp".len()
+                                                                    )
+                                                                    .position(|w| {
+                                                                        w == b"source_timestamp"
+                                                                    })
+                                                                {
+                                                                    let ts_pos =
+                                                                        pos + "source_timestamp".len();
+                                                                    if ts_pos + 8 <= b.len() {
+                                                                        let ts_ns = u64::from_le_bytes(
+                                                                            b[ts_pos..ts_pos + 8]
+                                                                                .try_into()
+                                                                                .unwrap(),
+                                                                        );
+                                                                        let now = SystemTime::now()
+                                                                            .duration_since(
+                                                                                UNIX_EPOCH,
+                                                                            )
+                                                                            .unwrap_or_default();
+                                                                        let now_ns: u128 =
+                                                                            now.as_secs() as u128
+                                                                                * 1_000_000_000u128
+                                                                                + now.subsec_nanos()
+                                                                                    as u128;
+                                                                        let diff_ns = now_ns
+                                                                            .saturating_sub(
+                                                                                ts_ns as u128,
+                                                                            );
+
+                                                                        tracing::warn!(
+                                                                            "[ATT-RX] topic={} prio={:?} ts={} now={} diff_ns={} (~{:.3} ms)",
+                                                                            flow_name,
+                                                                            prio,
+                                                                            ts_ns,
+                                                                            now_ns,
+                                                                            diff_ns,
+                                                                            diff_ns as f64 / 1_000_000.0,
+                                                                        );
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Err(_) => {
+                                        // 沒東西可讀就跳出去
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        // ==== END PRINT TIMESTAMP IN RX PIPELINE ====
+
                         return Some((batch, prio));
                     }
                     Pull::Backoff(deadline) => {
