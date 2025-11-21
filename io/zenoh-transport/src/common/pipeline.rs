@@ -811,7 +811,7 @@ impl TransmissionPipelineProducer {
         };
 
         // ==== PRINT TIMESTAMP IN TX PIPELINE ====
-        if let NetworkBody::Push(ref p) = msg.body {
+        /*if let NetworkBody::Push(ref p) = msg.body {
             let flow_name = format!("{}{}", p.wire_expr.scope, p.wire_expr.suffix.as_ref());
 
             if let PushBody::Put(ref data) = p.payload {
@@ -847,7 +847,7 @@ impl TransmissionPipelineProducer {
                     }
                 }
             }
-        }
+        }*/
         // ==== END PRINT TIMESTAMP IN TX PIPELINE ====
 
         // If message is droppable, compute a deadline after which the sample could be dropped
@@ -938,18 +938,16 @@ impl TransmissionPipelineConsumer {
                         let prio = Priority::try_from(prio as u8).unwrap();
 
                         // ==== PRINT TIMESTAMP IN RX PIPELINE ====
-                        {
+                        /*{
                             let bytes = batch.as_slice();
                             let mut reader = bytes.reader();
                             let codec = Zenoh080::new();
 
                             loop {
-                                // 注意：這裡不要用 turbofish，型別用右邊的 Result 來指定
                                 let res: Result<TransportMessage, DidntRead> = codec.read(&mut reader);
                                 match res {
                                     Ok(tmsg) => {
                                         if let TransportBody::Frame(frame) = tmsg.body {
-                                            // frame.payload 裡面是 NetworkMessage
                                             for nmsg in frame.payload.iter() {
                                                 if let NetworkBody::Push(ref p) = nmsg.body {
                                                     let flow_name = format!(
@@ -1011,12 +1009,11 @@ impl TransmissionPipelineConsumer {
                                         }
                                     }
                                     Err(_) => {
-                                        // 沒東西可讀就跳出去
                                         break;
                                     }
                                 }
                             }
-                        }
+                        }*/
                         // ==== END PRINT TIMESTAMP IN RX PIPELINE ====
 
                         return Some((batch, prio));

@@ -336,7 +336,7 @@ pub fn route_data(
 
             // ==== PRINT TIMESTAMP HERE ====
             let mut p = payload();
-            if let PushBody::Put(ref data) = p {
+            /*if let PushBody::Put(ref data) = p {
                 if let Some(att) = data.ext_attachment.as_ref() {
                     if let Some(b) = att.buffer.slices().next() {
                         // find "source_timestamp"
@@ -368,7 +368,7 @@ pub fn route_data(
                         }
                     }
                 }
-            }
+            }*/
 
             // test
             //if let Some(table) = TOPIC_TABLE.get() {
